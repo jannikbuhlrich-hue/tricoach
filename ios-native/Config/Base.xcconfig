@@ -1,0 +1,6 @@
+// Standardwerte – leer = Garmin-Integration deaktiviert, App läuft mit Demo-Daten / Apple Health / FIT.
+GARMIN_CLIENT_ID =
+TRICOACH_BACKEND_URL =
+
+// Eigene Werte in Config/Secrets.xcconfig eintragen (wird nicht eingecheckt):
+#include? "Secrets.xcconfig"
