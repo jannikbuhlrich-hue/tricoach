@@ -110,6 +110,18 @@ const ICU = (() => {
     return asBuffer ? r.arrayBuffer() : r.json();
   }
   const sportOf = t => /swim/i.test(t) ? 'swim' : /ride|cycl|bike/i.test(t) ? 'bike' : /run/i.test(t) ? 'run' : /weight|strength|workout|crossfit|hiit|pilates|yoga/i.test(t) ? 'strength' : 'other';
+  /* intervals.icu-Typen → deutscher Name bei „Sonstiges“ (z. B. per Siri eingetragenes Kitesurfen) */
+  const ART = { Kitesurf: 'Kitesurfen', Windsurf: 'Windsurfen', Surfing: 'Surfen', StandUpPaddling: 'SUP', Hike: 'Wandern', Walk: 'Spaziergang', Rowing: 'Rudern', RockClimbing: 'Klettern', NordicSki: 'Ski', AlpineSki: 'Ski', Soccer: 'Fußball', Tennis: 'Tennis', InlineSkate: 'Inlineskaten', Canoeing: 'Kanu', Kayaking: 'Kajak', Sail: 'Segeln', Other: 'Sonstiges' };
+  /* Notiz, RPE und Gefühl aus intervals.icu übernehmen (z. B. per Siri oder auf einem anderen Gerät eingetragen) */
+  const extras = (a, item) => {
+    const desc = String(item.description || '').replace(/\n?\(per Siri über TriCoach\)/, '').trim();
+    if (desc && !a.notes) a.notes = desc;
+    const rpe = item.icu_rpe ?? item.perceived_exertion ?? (desc.match(/RPE (\d{1,2})\/10/) || [])[1];
+    if (rpe && !a.rpe) a.rpe = Math.min(10, Math.max(1, Math.round(+rpe)));
+    if (a.sport === 'other' && item.type && ART[item.type]) a.art = ART[item.type];
+    if (/tricoach/i.test(item.external_id || '')) a.viaTc = true;
+    return a;
+  };
 
   async function test() { const a = await get('/athlete/0'); return a.name || a.firstname || 'verbunden'; }
 
@@ -120,7 +132,7 @@ const ICU = (() => {
         const buf = await FIT.maybeGunzip(await get(p, true));
         if (FIT.isFit(buf)) {
           const acts = await FIT.parse(buf, id, 'icu');
-          acts.forEach(a => { a.extId = String(id); if (name && acts.length === 1) a.name = name; });
+          acts.forEach(a => { a.extId = String(id); if (name && acts.length === 1) a.name = name; if (acts.length === 1) extras(a, item); });
           if (acts.length) return acts;
         }
       } catch (e) { if (/API-Key/.test(e.message)) throw e; }
@@ -135,6 +147,7 @@ const ICU = (() => {
     };
     if (sport === 'swim') a.where = /open/i.test(item.type || '') ? 'ow' : item.pool_length ? Math.round(item.pool_length) : null;
     if (sport === 'bike' && item.icu_weighted_avg_watts) a.bike = { np: item.icu_weighted_avg_watts, ap: item.icu_average_watts };
+    extras(a, item);
     return [finalize(a)];
   }
 
@@ -173,7 +186,31 @@ const ICU = (() => {
     SET.lastSync = Date.now(); saveSettings(); recompute();
     return added;
   }
-  return { sync, test, lastNew: null };
+  /* Eigene Einträge auch in intervals.icu speichern → erscheinen auf iPhone, iPad und PC und sind für Siri sichtbar */
+  const TYPE = { swim: 'Swim', bike: 'Ride', run: 'Run', strength: 'WeightTraining' };
+  const OTHER_T = { Kitesurfen: 'Kitesurf', Windsurfen: 'Windsurf', Surfen: 'Surfing', SUP: 'StandUpPaddling', Wandern: 'Hike', Spaziergang: 'Walk', Rudern: 'Rowing', Klettern: 'RockClimbing', Yoga: 'Yoga', Ski: 'NordicSki' };
+  const typeOf = a => a.sport === 'swim' && swimWhere(a) === 'ow' ? 'OpenWaterSwim' : TYPE[a.sport] || OTHER_T[a.art] || 'Other';
+  const localIso = d => `${isoDay(d)}T${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:00`;
+  const body = a => ({
+    start_date_local: localIso(a.start), type: typeOf(a), name: a.name, moving_time: Math.round(a.dur), elapsed_time: Math.round(a.dur), distance: Math.round(a.dist || 0),
+    description: [a.notes, a.rpe ? `RPE ${a.rpe}/10` : '', swimWhere(a) ? whereTxt(swimWhere(a)) : '', a.ex?.length ? 'Übungen: ' + a.ex.map(x => `${x.n}${x.s ? ' ' + x.s + '×' : ''}${x.r || ''}${x.w ? ' @' + x.w + ' kg' : ''}`).join(', ') : ''].filter(Boolean).join('\n'),
+    ...(num(a.avgHr) ? { average_heartrate: Math.round(a.avgHr) } : {}), external_id: 'tricoach-' + a.id
+  });
+  async function send(method, path, data) {
+    const r = await fetch(base + path, { method, headers: { ...auth(), 'Content-Type': 'application/json' }, body: data ? JSON.stringify(data) : undefined });
+    if (r.status === 401 || r.status === 403) throw new Error('API-Key wird nicht akzeptiert');
+    if (!r.ok) throw new Error('intervals.icu ' + r.status);
+    try { return await r.json(); } catch (e) { return {}; }
+  }
+  async function push(a) {
+    let res;
+    try { res = await send('POST', '/athlete/0/activities/manual', body(a)); }
+    catch (e) { if (/ 4\d\d$/.test(e.message) && body(a).type === 'Other') res = await send('POST', '/athlete/0/activities/manual', { ...body(a), type: 'Workout' }); else throw e; }
+    return res?.id != null ? String(res.id) : null;
+  }
+  const update = (id, a) => send('PUT', `/activity/${encodeURIComponent(id)}`, { name: a.name, description: body(a).description, moving_time: Math.round(a.dur), distance: Math.round(a.dist || 0), type: typeOf(a) });
+  const remove = id => send('DELETE', `/activity/${encodeURIComponent(id)}`);
+  return { sync, test, push, update, remove, lastNew: null };
 })();
 
 /* ---------- Synchronisation steuern ---------- */

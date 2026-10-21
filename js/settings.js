@@ -42,7 +42,8 @@ function vSettings() {
   const perm = window.Notification?.permission;
   h += `<div class="card"><h3>${icon('bell')} Kalender &amp; Hinweise</h3><span class="cap fg">Hinweise (z. B. „1 Tag vorher“) zeigt TriCoach, solange die App offen ist. Zuverlässig auch bei geschlossener App: im Kalender <b>„An Apple Kalender senden“</b> – dann erinnert dich Apple Kalender, inklusive Wiederholungen.</span>
     <div class="row" style="flex-wrap:wrap">${perm === 'granted' ? '<b class="good">✓ Mitteilungen erlaubt</b>' : `<button class="btn" data-act="notify">${icon('bell', 14)} Mitteilungen erlauben</button>`}<button class="btn" data-act="ics">${icon('share', 14)} An Apple Kalender senden</button></div>
-    <span class="cap">Siri &amp; Kurzbefehle: Ein Kurzbefehl „URL öffnen“ mit <code>${esc(location.origin + location.pathname)}#log</code> öffnet direkt „Einheit eintragen“ – z. B. „Hey Siri, Training eintragen“.</span></div>`;
+    </div>`;
+  h += siriSettingsCard();
 
   // Design
   h += `<div class="card"><h3>Design</h3><div class="designs">${DESIGNS.map(d => `<button class="design ${SET.design === d.id ? 'on' : ''}" data-act="design:${d.id}"><span class="swatch" style="background:${d.sw[0]}"><i style="background:${d.sw[1]}"></i><em style="background:${d.sw[2]}"></em><u style="background:${d.sw[3]}"></u><u style="background:${d.sw[4]}"></u><u style="background:${d.sw[5]}"></u></span><b>${d.name}</b><span class="cap">${d.desc}</span></button>`).join('')}</div></div>`;
@@ -68,8 +69,8 @@ function vSettings() {
   h += `<div class="card"><h3>App installieren</h3>${inst}</div>`;
 
   // Updates & Daten
-  h += `<div class="card"><h3>Updates &amp; Daten</h3><div class="row" style="flex-wrap:wrap"><span>Version <b>${APP_VERSION}</b></span><button class="btn" data-act="checkupdate">Nach Updates suchen</button></div><span class="cap">Updates kommen automatisch: Beim nächsten Öffnen erscheint „Neue Version verfügbar“, ein Tipp genügt.</span>
-    <div class="row" style="flex-wrap:wrap"><button class="btn" data-act="backup">Daten sichern (Datei)</button><button class="btn" data-act="wipe">Alle Trainingsdaten auf diesem Gerät löschen</button></div>${S.confirmWipe ? `<div class="row"><b class="warnc">Wirklich alles löschen?</b><button class="btn primary" data-act="wipe-yes">Ja, löschen</button><button class="btn" data-act="wipe-no">Abbrechen</button></div>` : ''}</div>`;
+  h += `<div class="card"><h3>Updates &amp; Daten</h3><div class="row" style="flex-wrap:wrap"><span>Version <b>${APP_VERSION}</b></span><button class="btn" data-act="checkupdate">Nach Updates suchen</button></div><span class="cap">Updates kommen automatisch: Beim nächsten Öffnen erscheint „Neue Version verfügbar“, ein Tipp genügt. Mit „Daten sichern“ und „Sicherung laden“ überträgst du Kalender, eigene Einheiten und Hausaufgaben z. B. vom iPhone auf iPad oder PC (wird zusammengeführt, nichts geht verloren).</span>
+    <div class="row" style="flex-wrap:wrap"><button class="btn" data-act="backup">Daten sichern (Datei)</button><label class="btn" for="restorefile" style="cursor:pointer">Sicherung laden</label><input id="restorefile" type="file" accept=".json,application/json" hidden><button class="btn" data-act="wipe">Alle Trainingsdaten auf diesem Gerät löschen</button></div>${S.confirmWipe ? `<div class="row"><b class="warnc">Wirklich alles löschen?</b><button class="btn primary" data-act="wipe-yes">Ja, löschen</button><button class="btn" data-act="wipe-no">Abbrechen</button></div>` : ''}</div>`;
   return h;
 }
 
@@ -100,8 +101,25 @@ async function handleSettingsSubmit(id) {
   }
 }
 
+/* Sicherung wiederherstellen – z. B. um Einträge vom iPhone auf iPad oder PC zu übertragen. Führt zusammen, löscht nichts. */
+async function restoreBackup(file) {
+  let b; try { b = JSON.parse(await file.text()); } catch (e) { toast('Das ist keine TriCoach-Sicherung'); return; }
+  if (!b || !Array.isArray(b.plan) || !Array.isArray(b.activities)) { toast('Das ist keine TriCoach-Sicherung'); return; }
+  let np = 0, na = 0;
+  b.plan.forEach(p => { if (!PLAN.some(x => x.id === p.id)) { PLAN.push({ kind: 'workout', ...p, date: new Date(p.date) }); np++; } });
+  savePlan();
+  Object.entries(b.edits || {}).forEach(([k, v]) => { if (!EDITS[k]) EDITS[k] = v; }); saveEdits();
+  const known = new Set(ACTS.map(a => a.id)), own = b.activities.filter(a => a.source === 'manual' && !known.has(a.id)).map(a => ({ ...a, start: new Date(a.start) }));
+  const watch = SET.source === 'demo' ? [] : b.activities.filter(a => a.source !== 'manual' && a.source !== 'demo' && !known.has(a.id)).map(a => ({ ...a, start: new Date(a.start) }));
+  if (own.length || watch.length) { await DB.put('acts', [...own, ...watch]); na = own.length + watch.length; }
+  if (b.wellness?.length && SET.source !== 'demo') await DB.put('well', b.wellness.map(w => ({ ...w, date: new Date(w.date) })));
+  if (b.school) { (b.school.own || []).forEach(h => { if (!SCH.own.some(x => x.id === h.id)) SCH.own.push(h); }); SCH.done = { ...(b.school.done || {}), ...SCH.done }; saveSch(); }
+  if (b.settings) { const s = b.settings; ['goals', 'yearGoals', 'shortcut', 'cda', 'wetsuit'].forEach(k => { if (s[k] != null && SET[k] == null) SET[k] = s[k]; }); if (s.profile) Object.assign(P, s.profile); if (s.race) { Object.assign(RACE, s.race); RACE.date = new Date(RACE.date); } saveSettings(); }
+  await loadData(); render();
+  toast(`Wiederhergestellt: ${np} Kalendereinträge, ${na} Einheiten`);
+}
 function backup() {
-  const data = JSON.stringify({ version: APP_VERSION, settings: { ...SET, icuKey: undefined }, plan: PLAN, edits: EDITS, activities: SET.source === 'demo' ? ACTS.filter(a => a.source === 'manual') : ACTS, wellness: WELL }, null, 0);
+  const data = JSON.stringify({ version: APP_VERSION, settings: { ...SET, icuKey: undefined, tpIcal: undefined }, plan: PLAN, edits: EDITS, school: { own: SCH.own, done: SCH.done }, activities: SET.source === 'demo' ? ACTS.filter(a => a.source === 'manual') : ACTS, wellness: WELL }, null, 0);
   const url = URL.createObjectURL(new Blob([data], { type: 'application/json' }));
   const a = document.createElement('a'); a.href = url; a.download = `TriCoach-Backup-${isoDay(new Date())}.json`; document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 5000);

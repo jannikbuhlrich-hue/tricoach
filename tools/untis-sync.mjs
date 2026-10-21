@@ -37,8 +37,11 @@ async function deriveKey(pass, salt, use) {
   const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(pass), 'PBKDF2', false, ['deriveKey']);
   return crypto.subtle.deriveKey({ name: 'PBKDF2', salt, iterations: 120000, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, [use]);
 }
+/* Festes Salz: der Schlüssel (TRICOACH_KEY, 18 Zufallsbytes) ist selbst zufällig genug. So muss die App bzw. das Siri-Skript
+   den Schlüssel nur einmal ableiten (PBKDF2) und nicht bei jedem Abruf neu – wichtig für Siri und das Widget. Die IV bleibt zufällig. */
+const SALT = new Uint8Array((await crypto.subtle.digest('SHA-256', new TextEncoder().encode('TriCoach-Salz-v1'))).slice(0, 16));
 export async function encrypt(obj, pass) {
-  const salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12));
+  const salt = SALT, iv = crypto.getRandomValues(new Uint8Array(12));
   const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, await deriveKey(pass, salt, 'encrypt'), new TextEncoder().encode(JSON.stringify(obj))));
   return JSON.stringify({ v: 1, salt: b64(salt), iv: b64(iv), ct: b64(ct) });
 }

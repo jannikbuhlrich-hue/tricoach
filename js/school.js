@@ -12,8 +12,16 @@ const SCH = {
   own: (() => { try { return JSON.parse(localStorage.getItem('tricoach-hw') || '[]'); } catch (e) { return []; } })(),
   busy: false, err: '', checked: null
 };
-const SUBJ = { M: 'Mathe', D: 'Deutsch', E: 'Englisch', F: 'Französisch', L: 'Latein', S: 'Spanisch', BIO: 'Biologie', BI: 'Biologie', CH: 'Chemie', PH: 'Physik', GE: 'Geschichte', EK: 'Erdkunde', POL: 'Politik', PW: 'Politik', SW: 'Sozialwiss.', WI: 'Wirtschaft', INF: 'Informatik', IF: 'Informatik', KU: 'Kunst', MU: 'Musik', SP: 'Sport', RE: 'Religion', ER: 'ev. Religion', KR: 'kath. Religion', PL: 'Philosophie', WN: 'Werte & Normen', DS: 'Darst. Spiel' };
-const subjName = (su, long) => long || SUBJ[String(su || '').toUpperCase()] || su || '';
+const SUBJ = { M: 'Mathe', MA: 'Mathe', MAT: 'Mathe', DE: 'Deutsch', EN: 'Englisch', D: 'Deutsch', E: 'Englisch', F: 'Französisch', L: 'Latein', S: 'Spanisch', BIO: 'Biologie', BI: 'Biologie', CH: 'Chemie', PH: 'Physik', GE: 'Geschichte', EK: 'Erdkunde', POL: 'Politik', PW: 'Politik', SW: 'Sozialwiss.', WI: 'Wirtschaft', INF: 'Informatik', IF: 'Informatik', KU: 'Kunst', MU: 'Musik', SP: 'Sport', RE: 'Religion', ER: 'ev. Religion', KR: 'kath. Religion', PL: 'Philosophie', WN: 'Werte & Normen', DS: 'Darst. Spiel' };
+/* Fachname: Langname aus WebUntis, sonst aus den Stunden desselben Kurses (z. B. „MatL1“ → Mathematik), sonst Kürzel-Liste */
+function subjName(su, long) {
+  if (long && long !== su) return long;
+  if (!su) return '';
+  const l = SCH.data?.lessons?.find(x => x.su === su && x.sul && x.sul !== su); if (l) return l.sul;
+  const up = String(su).toUpperCase(); if (SUBJ[up]) return SUBJ[up];
+  const pre = Object.keys(SUBJ).filter(k => k.length >= 2 && up.startsWith(k)).sort((a, b) => b.length - a.length)[0] || (SUBJ[up[0]] && /^[A-Z][^A-Z]/.test(String(su)) ? up[0] : null);
+  return pre ? SUBJ[pre] : su;
+}
 const saveSch = () => { try { localStorage.setItem('tricoach-school', JSON.stringify(SCH.data)); localStorage.setItem('tricoach-hwdone', JSON.stringify(SCH.done)); localStorage.setItem('tricoach-hw', JSON.stringify(SCH.own)); localStorage.setItem('tricoach-schoolkey', SCH.key); } catch (e) { } };
 const schoolOn = () => !!SCH.data;
 
@@ -25,9 +33,15 @@ function schoolUrl() {
   return `https://raw.githubusercontent.com/${owner}/${repo}/schule-daten/schule.enc`;
 }
 const b64u = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+const DK = new Map();   // abgeleitete Schlüssel je Salz (seit 2.6 ist das Salz fest → nur einmal rechnen)
 async function decryptSchool(txt, pass) {
-  const o = JSON.parse(txt), base = await crypto.subtle.importKey('raw', new TextEncoder().encode(pass), 'PBKDF2', false, ['deriveKey']);
-  const key = await crypto.subtle.deriveKey({ name: 'PBKDF2', salt: b64u(o.salt), iterations: 120000, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
+  const o = JSON.parse(txt), ck = pass + '|' + o.salt;
+  let key = DK.get(ck);
+  if (!key) {
+    const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(pass), 'PBKDF2', false, ['deriveKey']);
+    key = await crypto.subtle.deriveKey({ name: 'PBKDF2', salt: b64u(o.salt), iterations: 120000, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
+    DK.set(ck, key);
+  }
   return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64u(o.iv) }, key, b64u(o.ct))));
 }
 async function syncSchool(manual) {
@@ -124,7 +138,7 @@ function vSchool() {
   let h = header('Schule');
   if (!schoolOn()) return h + `<div class="card">${empty('Noch kein Stundenplan', 'In den Einstellungen unter „Schule“ verbindest du WebUntis. Eigene Hausaufgaben kannst du schon jetzt eintragen.', `<div class="row" style="flex-wrap:wrap"><button class="btn primary" data-act="nav:settings#schule">Einrichten</button><button class="btn" data-act="hwadd">${icon('plus', 14)} Hausaufgabe</button></div>`)}</div>` + (SCH.own.length ? `<div class="card"><h3>Hausaufgaben</h3>${hwList().sort((a, b) => a.dueD - b.dueD).map(hwRow).join('')}</div>` : '');
   const ws = addDays(weekStart(TODAY), 7 * (S.schoolWeek || 0)), days = Array.from({ length: 5 }, (_, i) => addDays(ws, i));
-  const st = new Date(SCH.data.at), age = (Date.now() - st) / 60000;
+  const st = new Date(SCH.data.at), hr = new Date().getHours(), age = hr >= 7 && hr < 23 ? (Date.now() - st) / 60000 : 0;   // nachts läuft der Job nicht – dann keine Warnung
   h += `<div class="row" style="justify-content:space-between;flex-wrap:wrap"><span class="cap ${age > 90 ? 'warnc' : ''}">Stand ${st.toLocaleString('de-DE', { weekday: 'short', hour: '2-digit', minute: '2-digit' })}${age > 90 ? ' – der GitHub-Job hat länger nicht aktualisiert' : ''}${SCH.data.err?.length ? ' · ' + esc(SCH.data.err.join(' | ')) : ''}</span><button class="btn small ${SCH.busy ? 'on' : ''}" data-act="schoolsync">${icon('sync', 14)} Aktualisieren</button></div>`;
   const ch = schoolChanges(TODAY, addDays(TODAY, 7));
   if (ch.length) h += `<div class="card"><h3>${icon('bell', 16, 'var(--warn)')} Änderungen <small>nächste 7 Tage</small></h3>${ch.map(l => `<div class="chgday"><span class="cap">${l.day.toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'numeric' })}</span>${lessonRow(l)}</div>`).join('')}</div>`;

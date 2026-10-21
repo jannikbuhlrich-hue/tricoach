@@ -14,7 +14,16 @@ Triathlon-App für die Garmin Forerunner 265 – läuft auf iPhone, iPad und PC 
 - **USB (PC):** Uhr anstecken, Ordner `GARMIN/Activity` wählen.
 - **Live-Puls:** Uhr auf „HF übertragen“, in TriCoach „Live-Puls“ → verbinden (Chrome/Edge/Android).
 
-Neu in 2.5
+## Neu in 2.6
+- **Siri, Kurzbefehle & Widget, die wirklich funktionieren:** Apple lässt Kurzbefehle keine Web-App öffnen („URL öffnen“ landet in Safari ohne deine Daten). Darum läuft Siri jetzt über das Skript `siri/TriCoach.js` in der kostenlosen App **Scriptable**: „Hey Siri, Frag TriCoach“ → „Was steht morgen an?“, „Wie ist meine Form?“, „Trag 45 Minuten Lauf 9 km ein“ … plus Widget „Mein Tag“ (Schule mit Entfall/Vertretung, Training, Prüfungen, Hausaufgaben). Einrichtung in 3 Schritten unter Einstellungen → Siri & Kurzbefehle. Das Skript entschlüsselt Schule/Trainingsplan selbst und aktualisiert sich automatisch.
+- **Auf allen Geräten:** Eigene Einheiten werden (wenn intervals.icu verbunden ist) zusätzlich in intervals.icu gespeichert und erscheinen so auf iPhone, iPad und PC – und für Siri. Per Siri eingetragene Einheiten kommen mit Notiz, RPE und Sportart (z. B. Kitesurfen) in TriCoach an.
+- **Aufruf-Links** für PC/Android/Verknüpfungen: `#today`, `#log`, `?do=log&sport=run&min=45&km=9&rpe=4`, `?do=plan&sport=bike&min=90&date=morgen`, `?do=hw`, `?do=sync` – auch bei schon offener App.
+- **Sicherung laden:** Kalender, eigene Einheiten und Hausaufgaben per Datei von einem Gerät aufs andere übertragen (wird zusammengeführt).
+- Hausaufgaben zeigen den richtigen Fachnamen (z. B. „MatL1“ → Mathematik); keine falsche „Job hat nicht aktualisiert“-Warnung mehr nachts.
+- Verschlüsselung mit festem Salz → Schlüssel muss nur einmal abgeleitet werden (schneller, nötig für Siri/Widget).
+- Native iOS-Version: zusätzliche Siri-Befehle (Morgen, Form, Wettkampf, Öffnen) und Athletik/Sonstiges als Sportart.
+
+## Neu in 2.5
 
 - **TrainingPeaks-Plan automatisch:** GitHub-Job `TrainingPeaks-Plan` (.github/workflows/tp.yml) holt stündlich den privaten iCal-Link, verschlüsselt ihn mit `TRICOACH_KEY` (Branch `tp-daten`). TriCoach lädt ihn beim Öffnen und alle 30 Minuten, übernimmt Änderungen deiner Trainerin, entfernt gelöschte Einheiten und liest die geplante Dauer aus dem Titel. Kein TrainingPeaks-Passwort nötig.
 - Link hinterlegen: `TRICOACH_KEY=… node tools/tp-sync.mjs --set "webcal://…"` (schreibt `tools/tp-zugang.enc`) oder Secret `TP_ICAL`.
@@ -57,6 +66,8 @@ js/log.js        Einheiten eintragen/bearbeiten
 js/tp.js         TrainingPeaks-Brücke (Apple Health, FIT-Writer, Übergabe)
 js/progress.js   Fortschritt (Ringe, Trends, Bestleistungen, VO2 Max)
 js/school.js     Mein Tag + Schule (WebUntis-Daten entschlüsseln, Stundenplan, Hausaufgaben)
+js/siri.js       Siri/Kurzbefehle/Widget-Einrichtung, Aufruf-Links
+siri/TriCoach.js Scriptable-Skript für Siri, Kurzbefehle und Widget (Tests: node siri/test/cmds.test.mjs)
 tools/           untis-sync.mjs für den GitHub-Job
 ios-native/      Native SwiftUI-Version (braucht Mac + Xcode)
 ```

@@ -49,7 +49,8 @@ function logSheet() {
     !w ? frow('Ø Herzfrequenz', `<input name="l-hr" type="number" inputmode="numeric" min="40" max="220" placeholder="optional" value="${d.avgHr ? Math.round(d.avgHr) : ''}">`) : '',
     !w ? frow('Kalorien', `<input name="l-kcal" type="number" inputmode="numeric" min="0" max="10000" placeholder="wird geschätzt" value="${d.kcal || ''}">`) : '']);
   b += fg([`<textarea name="l-notes" rows="3" placeholder="Notizen für dich und deine Trainerin – z. B. Hauptserie, Gefühl, Material">${esc(d.notes)}</textarea>`]);
-  if (!s.id) b += fg([`<label class="frow"><span>${ICON.tp} An TrainingPeaks senden <em class="cap">über Apple Health</em></span><input type="checkbox" name="l-tp" ${d.toTp ? 'checked' : ''}></label>`]);
+  if (!s.id) b += fg([`<label class="frow"><span>${ICON.tp} An TrainingPeaks senden <em class="cap">über Apple Health</em></span><input type="checkbox" name="l-tp" ${d.toTp ? 'checked' : ''}></label>`,
+    icuPushOn() || (SET.source === 'icu' && SET.icuKey) ? `<label class="frow"><span>${icon('sync', 16)} Auf allen Geräten <em class="cap">über intervals.icu – auch für Siri</em></span><input type="checkbox" name="l-icu" ${SET.icuPush !== false ? 'checked' : ''}></label>` : '']);
   if (s.id && !w) b += `<button type="button" class="btn danger" data-act="delact:${s.id}">Einheit löschen</button>`;
   return sheetWrap(s.id ? 'Einheit bearbeiten' : 'Einheit eintragen', b, 'logform');
 }
@@ -73,6 +74,7 @@ function readLogForm() {
   if (g('l-kcal')) d.kcal = +v('l-kcal') || null;
   if (g('l-notes')) d.notes = v('l-notes');
   if (g('l-tp')) d.toTp = g('l-tp').checked;
+  if (g('l-icu') && (SET.icuPush !== false) !== g('l-icu').checked) { SET.icuPush = g('l-icu').checked; saveSettings(); }
   d.ex = d.ex.map((x, i) => g('ex-n' + i) ? { n: v('ex-n' + i).trim(), s: +v('ex-s' + i) || null, r: v('ex-r' + i).trim(), w: parseFloat(v('ex-w' + i).replace(',', '.')) || null } : x);
 }
 const estKcal = (sp, dur, rpe) => Math.round(({ swim: 8, bike: 7.5, run: 10, strength: 5, other: 6 }[sp] || 6) * (.55 + (rpe || 5) * .09) * P.weight * dur / 3600);
@@ -95,7 +97,8 @@ async function saveLog() {
   const a = {
     id: s.id || 'man-' + Date.now().toString(36), source: 'manual', sport: d.sport, art: d.art || undefined, name: d.name || logTitle(d),
     start: d.start, dur: d.dur, dist: hasDist(d.sport) ? (d.dist || 0) : 0, rpe: d.rpe, avgHr: d.avgHr, maxHr: null, kcal: d.kcal || estKcal(d.sport, d.dur, d.rpe),
-    notes: d.notes, ex: d.sport === 'strength' ? d.ex.filter(x => x.n) : undefined, where: d.sport === 'swim' ? d.where : undefined, tp: old?.tp || null, samples: [], laps: []
+    notes: d.notes, ex: d.sport === 'strength' ? d.ex.filter(x => x.n) : undefined, where: d.sport === 'swim' ? d.where : undefined, tp: old?.tp || null, samples: [], laps: [],
+    extId: old?.extId, icuId: old?.icuId
   };
   a.tss = tss(a);
   try { await DB.put('acts', [a]); } catch (e) { toast('Speichern fehlgeschlagen: ' + e.message); return; }
@@ -103,7 +106,18 @@ async function saveLog() {
   const toTp = !s.id && d.toTp;
   S.sheet = null; render();
   toast(s.id ? 'Einheit aktualisiert' : `${a.name} eingetragen${a.dist ? ' · ' + distTxt(a.sport, a.dist) : ''}`);
+  icuMirror(a, !!old);
   if (toTp) sendToHealth(a);
+}
+/* intervals.icu spiegeln: neue Einträge anlegen, geänderte aktualisieren (Fehler stören nicht – der Eintrag ist lokal gesichert) */
+const icuPushOn = () => SET.source === 'icu' && !!SET.icuKey && SET.icuPush !== false;
+async function icuMirror(a, isEdit) {
+  if (!icuPushOn() || !navigator.onLine) return;
+  try {
+    if (a.icuId) { if (isEdit) await ICU.update(a.icuId, a); return; }
+    const id = await ICU.push(a);
+    if (id) { a.icuId = id; a.extId = id; await DB.put('acts', [a]); }
+  } catch (e) { console.warn('intervals.icu', e); toast(`Lokal gesichert – intervals.icu: ${e.message}`); }
 }
 
 /* Geplantes Training mit einem Tipp als erledigt eintragen */

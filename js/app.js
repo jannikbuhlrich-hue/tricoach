@@ -123,6 +123,8 @@ document.addEventListener('click', async e => {
     case 'exics': examIcs(); break;
     case 'schoolsync': syncSchool(true); break;
     case 'tpnow': fetchTpIcal(true); break;
+    case 'siricopy': copySiriScript(); break;
+    case 'siriconnect': siriConnect(); break;
     case 'schoolweek': S.schoolWeek = (S.schoolWeek || 0) + +v; render(); break;
     case 'skgen': { const i = document.getElementById('sk'); if (i) { i.value = newSchoolKey(); i.select(); } break; }
     case 'zcopy': { const t = zugangText(); if (!t) { toast('Bitte Server, Schule, Benutzer und Schlüssel eintragen'); break; } if (!/^[A-Z2-7]{8,}$/i.test(document.getElementById('z-key').value.replace(/\s+/g, ''))) { toast('Der Schlüssel besteht nur aus A–Z und 2–7 – bitte prüfen'); break; } if (await copyText(t)) toast('Kopiert – in GitHub als Secret UNTIS_ZUGANG einfügen'); break; }
@@ -147,7 +149,8 @@ document.addEventListener('click', async e => {
     case 'wipe': S.confirmWipe = true; render(); break;
     case 'wipe-no': S.confirmWipe = false; render(); break;
     case 'wipe-yes': await DB.clear('acts'); await DB.clear('well'); SET.lastSync = null; saveSettings(); S.confirmWipe = false; await loadData(); toast('Trainingsdaten gelöscht'); render(); break;
-    case 'delact': await DB.del('acts', v); ACTS = ACTS.filter(a => a.id !== v); recompute(); S.sheet = null; if (S.view === 'activity') S.view = S.back || 'dashboard'; render(); toast('Einheit gelöscht'); break;
+    case 'delact': { const gone = byId(v); if (gone?.icuId && icuPushOn()) ICU.remove(gone.icuId).catch(() => toast('In intervals.icu bitte von Hand löschen')); }
+      await DB.del('acts', v); ACTS = ACTS.filter(a => a.id !== v); recompute(); S.sheet = null; if (S.view === 'activity') S.view = S.back || 'dashboard'; render(); toast('Einheit gelöscht'); break;
     case 'ble-on': await BLE.connect(); break;
     case 'ble-off': BLE.disconnect(); break;
     case 'ble-rec': BLE.start(); syncLiveTimer(); break;
@@ -166,6 +169,7 @@ document.addEventListener('change', async e => {
   if (k === 'sheet') refreshSheet();
   if (k === 'showdone') { SET.showDone = t.checked; saveSettings(); render(); }
   if (t.id === 'icsfile' && t.files?.[0]) { importIcs(await t.files[0].text()); t.value = ''; }
+  if (t.id === 'restorefile' && t.files?.[0]) { await restoreBackup(t.files[0]); t.value = ''; }
 });
 document.addEventListener('input', e => {
   if (e.target.dataset.change === 'calq') { S.calQ = e.target.value; clearTimeout(window._cq); window._cq = setTimeout(() => { const pos = e.target.selectionStart; render(); const q = document.getElementById('calq'); if (q) { q.focus(); q.setSelectionRange(pos, pos); } }, 180); return; }
@@ -229,11 +233,8 @@ window.addEventListener('online', autoSync);
 /* ---------- Start ---------- */
 (async () => {
   applyDesign();
-  const hash = location.hash.slice(1);
-  if (VIEWS[hash] && !['activity', 'live'].includes(hash)) S.view = hash;
   await loadData();
-  if (hash === 'log') S.sheet = { t: 'log', id: null, d: newLog(at(TODAY, Math.max(6, NOW.getHours() - 1))) };   // Kurzbefehl/Siri: „TriCoach eintragen“
-  if (hash === 'new') S.sheet = { t: 'add' };
+  handleLink(true);   // Aufruf-Links: #ansicht oder ?do=log&sport=run&min=45&km=9 (Kurzbefehle, Desktop-Verknüpfungen, App-Symbol-Menü)
   render();
   autoSync(); checkAlarms(); schoolTick(); tpTick();
 })();

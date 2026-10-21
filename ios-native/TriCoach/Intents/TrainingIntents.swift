@@ -6,13 +6,15 @@ import SwiftUI
 // kann der Nutzer in der Kurzbefehle-App anlegen.
 
 enum SportAppEnum: String, AppEnum {
-    case swim, bike, run
+    case swim, bike, run, strength, other
 
     static let typeDisplayRepresentation: TypeDisplayRepresentation = "Sportart"
     static let caseDisplayRepresentations: [SportAppEnum: DisplayRepresentation] = [
         .swim: "Schwimmeinheit",
         .bike: "Radeinheit",
-        .run: "Laufeinheit"
+        .run: "Laufeinheit",
+        .strength: "Athletikeinheit",
+        .other: "Einheit"
     ]
 
     var sport: Sport { Sport(rawValue: rawValue) ?? .run }
@@ -87,7 +89,7 @@ struct PlanWorkoutIntent: AppIntent {
         let cal = Calendar.training
         let tomorrow = cal.date(byAdding: .day, value: 1, to: Date()) ?? Date()
         let day = date ?? cal.date(bySettingHour: 18, minute: 0, second: 0, of: tomorrow) ?? tomorrow
-        let titles: [SportAppEnum: String] = [.swim: "Schwimmen", .bike: "Radeinheit", .run: "Lauf"]
+        let titles: [SportAppEnum: String] = [.swim: "Schwimmen", .bike: "Radeinheit", .run: "Lauf", .strength: "Athletik", .other: "Training"]
         let workout = PlannedWorkout(date: day, sport: sport.sport, title: titles[sport] ?? "Training",
                                      plannedDuration: TimeInterval(minutes * 60))
         await TrainingStore.shared.addPlanned(workout)
@@ -115,11 +117,79 @@ struct WeeklyDistanceIntent: AppIntent {
         case .run: verb = "gelaufen"
         case .bike: verb = "Rad gefahren"
         case .swim: verb = "geschwommen"
+        case .strength, .other: verb = "trainiert"
         }
         let value = sport == .swim ? Fmt.number(km, digits: 2) : Fmt.number(km, digits: 1)
         return .result(value: km,
                        dialog: "Du bist diese Woche \(value) Kilometer \(verb), in \(totals.count) Einheiten und \(Fmt.hoursMinutes(totals.duration)).")
     }
+}
+
+// MARK: - „Was steht morgen an?“
+
+struct ShowTomorrowWorkoutIntent: AppIntent {
+    static let title: LocalizedStringResource = "Morgiges Training anzeigen"
+    static let description = IntentDescription("Zeigt die für morgen geplanten Einheiten.")
+
+    @MainActor
+    func perform() async throws -> some IntentResult & ProvidesDialog & ShowsSnippetView {
+        let store = TrainingStore.shared
+        let tomorrow = Calendar.training.date(byAdding: .day, value: 1, to: Date()) ?? Date()
+        let planned = store.planned(on: tomorrow)
+        let text = planned.isEmpty
+            ? "Morgen ist nichts geplant."
+            : "Morgen: " + planned.map { "\($0.title), \(Fmt.hoursMinutes($0.plannedDuration)) um \(Fmt.time($0.date))" }.joined(separator: ". ")
+        return .result(dialog: "\(text)", view: TodaySnippetView(planned: planned, done: []))
+    }
+}
+
+// MARK: - „Wie ist meine Form?“
+
+struct ReadinessIntent: AppIntent {
+    static let title: LocalizedStringResource = "Form und Bereitschaft abfragen"
+    static let description = IntentDescription("Fitness, Ermüdung, Form und Trainingsbereitschaft mit Empfehlung.")
+
+    @MainActor
+    func perform() async throws -> some IntentResult & ReturnsValue<Int> & ProvidesDialog {
+        let store = TrainingStore.shared
+        let r = ReadinessCalculator.evaluate(wellness: store.wellness, load: store.currentLoad, activities: store.activities)
+        var parts = ["Bereitschaft \(r.score) von 100, \(r.level.rawValue.lowercased())."]
+        if let l = store.currentLoad {
+            parts.append("Fitness \(Int(l.ctl.rounded())), Ermüdung \(Int(l.atl.rounded())), Form \(Int(l.tsb.rounded())).")
+        }
+        if r.recoveryHoursLeft >= 1 { parts.append("Noch etwa \(Int(r.recoveryHoursLeft.rounded())) Stunden Erholung.") }
+        switch r.level {
+        case .low: parts.append("Heute locker oder Pause.")
+        case .moderate: parts.append("Normales Training passt.")
+        case .high: parts.append("Gut für eine harte Einheit.")
+        }
+        return .result(value: r.score, dialog: "\(parts.joined(separator: " "))")
+    }
+}
+
+// MARK: - „Wann ist mein nächster Wettkampf?“
+
+struct NextRaceIntent: AppIntent {
+    static let title: LocalizedStringResource = "Nächster Wettkampf"
+    static let description = IntentDescription("Countdown zum nächsten Wettkampf.")
+
+    @MainActor
+    func perform() async throws -> some IntentResult & ProvidesDialog {
+        guard let race = TrainingStore.shared.nextRace else {
+            return .result(dialog: "Kein Wettkampf eingetragen.")
+        }
+        let cal = Calendar.training
+        let days = cal.dateComponents([.day], from: cal.startOfDay(for: Date()), to: cal.startOfDay(for: race.date)).day ?? 0
+        return .result(dialog: "\(race.name) am \(Fmt.dayTitle(race.date)) – noch \(days) Tage.")
+    }
+}
+
+// MARK: - „Öffne TriCoach“
+
+struct OpenTriCoachIntent: AppIntent {
+    static let title: LocalizedStringResource = "TriCoach öffnen"
+    static let openAppWhenRun = true
+    func perform() async throws -> some IntentResult { .result() }
 }
 
 // MARK: - App Shortcuts (sofort für Siri verfügbar, ohne Einrichtung)
@@ -155,6 +225,40 @@ struct TriCoachShortcuts: AppShortcutsProvider {
             ],
             shortTitle: "Wochenkilometer",
             systemImageName: "chart.bar.fill"
+        )
+        AppShortcut(
+            intent: ShowTomorrowWorkoutIntent(),
+            phrases: [
+                "Was steht morgen in \(.applicationName) an",
+                "\(.applicationName) morgen"
+            ],
+            shortTitle: "Morgen",
+            systemImageName: "calendar"
+        )
+        AppShortcut(
+            intent: ReadinessIntent(),
+            phrases: [
+                "Wie ist meine Form in \(.applicationName)",
+                "\(.applicationName) Bereitschaft",
+                "\(.applicationName) Form"
+            ],
+            shortTitle: "Form",
+            systemImageName: "heart.text.square"
+        )
+        AppShortcut(
+            intent: NextRaceIntent(),
+            phrases: [
+                "Wann ist mein nächster Wettkampf in \(.applicationName)",
+                "\(.applicationName) Wettkampf"
+            ],
+            shortTitle: "Nächster Wettkampf",
+            systemImageName: "flag.checkered"
+        )
+        AppShortcut(
+            intent: OpenTriCoachIntent(),
+            phrases: ["Öffne \(.applicationName)"],
+            shortTitle: "Öffnen",
+            systemImageName: "bolt.fill"
         )
     }
 }
