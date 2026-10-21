@@ -70,9 +70,10 @@ const FIT = (() => {
   }
 
   const date = ts => new Date((ts + EPOCH) * 1000);
-  const SPORT = { 1: 'run', 2: 'bike', 5: 'swim', 11: 'run' };
+  const SPORT = { 1: 'run', 2: 'bike', 5: 'swim', 10: 'strength' };
+  const OTHER = { 44: 'Kitesurfen', 43: 'Windsurfen', 37: 'SUP', 38: 'Surfen', 41: 'Kajak', 17: 'Wandern', 15: 'Rudern', 13: 'Ski alpin', 12: 'Langlauf', 19: 'Paddeln', 11: 'Gehen' };
   const STROKE = { 0: 'free', 1: 'back', 2: 'breast', 3: 'fly', 4: 'drill', 5: 'mixed' };
-  const NAMES = { run: 'Lauf', bike: 'Radfahrt', swim: 'Schwimmen', other: 'Aktivität' };
+  const NAMES = { run: 'Lauf', bike: 'Radfahrt', swim: 'Schwimmen', strength: 'Athletiktraining', other: 'Aktivität' };
 
   /* FIT-Messages → Aktivitäten (eine pro Session) */
   function toActivities(msgs, fileId, source = 'fit') {
@@ -120,6 +121,7 @@ const FIT = (() => {
         avgHr: sv[16] ?? null, maxHr: sv[17] ?? null, elev: sv[22] ?? null,
         te: sv[24] != null ? sv[24] / 10 : null, samples, laps: lapList
       };
+      if (sport === 'other' && OTHER[sv[5]]) { act.art = OTHER[sv[5]]; act.name = OTHER[sv[5]]; }
       if (sport === 'bike' && sv[34]) act.bike = { np: sv[34], ap: sv[20] ?? null, cad: sv[18] ?? null };
       if (sport === 'swim') {
         const pool = sv[44] != null ? sv[44] / 100 : null;

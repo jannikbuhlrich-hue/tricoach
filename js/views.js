@@ -1,7 +1,8 @@
 'use strict';
 /* TriCoach – Ansichten */
 
-const actRow = a => `<button class="act" data-act="open:${a.id}"><span class="sport" style="--c:${C[a.sport] || C.other}">${ICON[a.sport] || ICON.other}</span><span class="mid"><b>${esc(a.name)}</b><span>${shortDate(a.start)} · ${hm(a.dur)}${a.source === 'demo' ? '' : ' · ' + ({ icu: 'Uhr', fit: 'FIT', live: 'Live' }[a.source] || '')}</span></span><span class="end"><b>${a.dist ? (a.sport === 'swim' ? de(a.dist) + ' m' : km(a.dist)) : hm(a.dur)}</b><br><span>TSS ${Math.round(a.tss || 0)}</span></span></button>`;
+const SRC = { icu: 'Uhr', fit: 'FIT', live: 'Live', manual: 'eingetragen' };
+const actRow = a => `<button class="act" data-act="open:${a.id}"><span class="sport" style="--c:${C[a.sport] || C.other}">${sicon(a.sport)}</span><span class="mid"><b>${esc(a.name)}</b><span>${shortDate(a.start)} · ${hm(a.dur)}${a.source === 'demo' ? '' : ' · ' + (SRC[a.source] || '')}${a.rpe && a.source === 'manual' ? ' · RPE ' + a.rpe : ''}${a.source === 'manual' ? (a.tp ? ' · ✓ TP' : ' · <em class="warnc">nicht in TP</em>') : ''}</span></span><span class="end"><b>${a.dist ? distTxt(a.sport, a.dist) : hm(a.dur)}</b><br><span>TSS ${Math.round(a.tss || 0)}</span></span></button>`;
 
 function header(title, back) {
   let chip;
@@ -19,21 +20,25 @@ function vDashboard() {
   if (!ACTS.length) return h + noData();
   const rd = readiness(), from = S.period === 'week' ? weekStart(TODAY) : monthStart(TODAY), to = S.period === 'week' ? addDays(from, 7) : new Date(from.getFullYear(), from.getMonth() + 1, 1);
   const pf = S.period === 'week' ? addDays(from, -7) : new Date(from.getFullYear(), from.getMonth() - 1, 1);
-  const today = planOn(TODAY), rc = { high: 'var(--good)', mid: 'var(--warn)', low: 'var(--bad)' }[rd.level];
+  const today = calItems(TODAY, addDays(TODAY, 1), true), rc = { high: 'var(--good)', mid: 'var(--warn)', low: 'var(--bad)' }[rd.level];
   h += `<div class="card hero-card"><div class="hero">${ring(rd.score / 100, rd.score, 'Bereitschaft', rc)}<div class="info"><span class="muted">${dayTitle(TODAY)}</span>` +
-    (today.length ? today.map(p => `<div class="today" style="color:${isDone(p) ? 'var(--good)' : C[p.sport]}">${isDone(p) ? '✓ ' : ''}${esc(p.title)} · ${hm(p.min * 60)}</div>`).join('') : '<div class="today">Heute nichts geplant</div>') +
+    (today.length ? today.map(p => `<div class="today" style="color:${isDone(p) ? 'var(--good)' : pColor(p)}">${isDone(p) ? '✓ ' : ''}${esc(p.title)}${p.allDay ? '' : ' · ' + (p.kind === 'event' ? time(p.date) : hm(p.min * 60))}</div>`).join('') : '<div class="today">Heute nichts geplant</div>') +
     `<div class="pills"><div class="pill"><b style="color:var(--fit)">${Math.round(LOAD.ctl)}</b><span>Fitness</span></div><div class="pill"><b style="color:var(--fat)">${Math.round(LOAD.atl)}</b><span>Ermüdung</span></div><div class="pill"><b style="color:var(--form)">${Math.round(LOAD.tsb)}</b><span>Form</span></div></div>` +
     `<span class="cap">Bereitschaft ${rd.src === 'Uhr' ? 'von deiner Uhr' : 'aus Schlaf, HRV und Belastung berechnet'}${rd.rec > 1 ? ` · Erholung noch ${Math.round(rd.rec)} h` : ''}</span></div></div></div>`;
   const latest = ACTS[0];
   if (latest && Date.now() - latest.start.getTime() < 48 * 3600 * 1000) h += latestCard(latest);
   h += `<div><div class="seg">${[['week', 'Woche'], ['month', 'Monat']].map(([k, l]) => `<button class="${S.period === k ? 'on' : ''}" data-act="period:${k}">${l}</button>`).join('')}</div></div>`;
-  h += `<div class="tiles">` + SPORTS.map(s => { const t = totals(s, from, to), p = totals(s, pf, from), dl = p.dur ? (t.dur - p.dur) / p.dur * 100 : 0; return tile(NAME[s], s === 'swim' ? de(t.dist) : de(t.dist / 1000, s === 'bike' ? 0 : 1), s === 'swim' ? 'm' : 'km', `${t.n}× · ${hm(t.dur)}${p.dur ? ` · ${dl >= 0 ? '+' : ''}${Math.round(dl)} %` : ''}`, C[s], s, 'nav:' + s); }).join('') +
-    (() => { const t = totals(null, from, to); return tile('Gesamt', hm(t.dur), '', `TSS ${Math.round(t.tss)} · ${t.n} Einheiten`, 'var(--accent)', 'sum'); })() + `</div>`;
+  const vo = vo2Now();
+  h += `<div class="tiles">` + ALL.map(s => { const t = totals(s, from, to), p = totals(s, pf, from), dl = p.dur ? (t.dur - p.dur) / p.dur * 100 : 0, cmp = p.dur ? ` · ${dl >= 0 ? '+' : ''}${Math.round(dl)} %` : '';
+      if (!hasDist(s)) return tile(NAME[s], s === 'strength' ? t.n : hm(t.dur), s === 'strength' ? '×' : '', s === 'strength' ? `${hm(t.dur)}${cmp}` : `${t.n}×${cmp}`, C[s], s, 'calview:list');
+      return tile(NAME[s], de(t.dist / 1000, s === 'bike' ? 0 : s === 'swim' ? (t.dist >= 10000 ? 1 : 2) : 1), 'km', `${t.n}× · ${hm(t.dur)}${cmp}`, C[s], s, 'nav:' + s); }).join('') +
+    (() => { const t = totals(null, from, to); return tile('Gesamt', hm(t.dur), '', `TSS ${Math.round(t.tss)} · ${t.n} Einheiten`, 'var(--accent)', 'sum', 'nav:progress'); })() +
+    (vo ? tile('VO2 Max', de(vo.v, 1), '', num(vo.d) ? `${sgn(vo.d, 1)} in 30 Tagen` : vo.src, 'var(--run)', 'run', 'nav:progress') : '') + `</div>`;
 
-  const wk = weekly(null), W2 = cw(true), maxH = Math.max(1, ...wk.map(x => SPORTS.reduce((s, sp) => s + x[sp].dur, 0) / 3600)) * 1.1;
+  const wk = weekly(null), W2 = cw(true), maxH = Math.max(1, ...wk.map(x => ALL.reduce((s, sp) => s + x[sp].dur, 0) / 3600)) * 1.1;
   const vol = chart({
     w: W2, x0: -.5, x1: wk.length - .5, y0: 0, y1: maxH, yFmt: v => de(v, v % 1 ? 1 : 0) + 'h', xt: wk.map((x, i) => ({ v: i, l: i % 2 ? '' : shortDate(x.week) })),
-    layers: [(sx, sy) => wk.map((x, i) => { let y = 0; const bw = (sx(1) - sx(0)) * .62; return SPORTS.map(sp => { const hh = x[sp].dur / 3600, r = `<rect x="${sx(i) - bw / 2}" y="${sy(y + hh)}" width="${bw}" height="${Math.max(0, sy(y) - sy(y + hh))}" fill="${C[sp]}"/>`; y += hh; return r; }).join(''); }).join('')]
+    layers: [(sx, sy) => wk.map((x, i) => { let y = 0; const bw = (sx(1) - sx(0)) * .62; return ALL.map(sp => { const hh = x[sp].dur / 3600, r = `<rect x="${sx(i) - bw / 2}" y="${sy(y + hh)}" width="${bw}" height="${Math.max(0, sy(y) - sy(y + hh))}" fill="${C[sp]}"/>`; y += hh; return r; }).join(''); }).join('')]
   });
   const pts = PMC.slice(-90), y0 = Math.min(0, ...pts.map(p => p.tsb)) - 5, y1 = Math.max(10, ...pts.map(p => Math.max(p.ctl, p.atl))) + 5, t0 = pts[0].date.getTime(), t1 = pts[pts.length - 1].date.getTime();
   const pmcSvg = chart({
@@ -41,7 +46,7 @@ function vDashboard() {
     layers: [(sx, sy) => pts.map(p => `<rect x="${sx(p.date.getTime()) - 1.5}" y="${Math.min(sy(p.tsb), sy(0))}" width="3" height="${Math.abs(sy(p.tsb) - sy(0))}" fill="${p.tsb >= 0 ? 'var(--form)' : 'var(--faint)'}" opacity=".55"/>`).join(''),
     line(pts.map(p => ({ x: p.date.getTime(), y: p.atl })), 'var(--fat)', 1.6), line(pts.map(p => ({ x: p.date.getTime(), y: p.ctl })), 'var(--fit)', 2.6)]
   });
-  h += `<div class="cols two"><div class="card"><h3>Umfang pro Woche</h3>${vol}<div class="legend">${SPORTS.map(s => `<span><i style="background:${C[s]}"></i>${NAME[s]}</span>`).join('')}</div></div>
+  h += `<div class="cols two"><div class="card"><h3>Umfang pro Woche</h3>${vol}<div class="legend">${ALL.map(s => `<span><i style="background:${C[s]}"></i>${NAME[s]}</span>`).join('')}</div></div>
     <div class="card"><h3>Fitness · Ermüdung · Form <small>90 Tage</small></h3>${pmcSvg}<div class="legend"><span><i style="background:var(--fit)"></i>Fitness (CTL)</span><span><i style="background:var(--fat)"></i>Ermüdung (ATL)</span><span><i style="background:var(--form)"></i>Form (TSB)</span></div></div></div>`;
 
   const z = hrZones(), tz = timeInZones(ACTS.filter(a => a.start >= from && a.start < to), z, 'hr'), tot = tz.reduce((a, b) => a + b, 0) || 1;
@@ -62,7 +67,7 @@ function vDashboard() {
 
 function latestCard(a) {
   const hs = hrSummary(a);
-  let h = `<button class="card" data-act="open:${a.id}" style="text-align:left;cursor:pointer"><h3>${icon(a.sport, 16, C[a.sport])} Neu von deiner Uhr <small>${shortDate(a.start)}, ${time(a.start)}</small></h3><b style="font-size:16px">${esc(a.name)} · ${hm(a.dur)}${a.dist ? ' · ' + (a.sport === 'swim' ? de(a.dist) + ' m' : km(a.dist)) : ''}</b>`;
+  let h = `<button class="card" data-act="open:${a.id}" style="text-align:left;cursor:pointer"><h3>${icon(a.sport, 16, C[a.sport])} ${a.source === 'manual' ? 'Zuletzt eingetragen' : 'Neu von deiner Uhr'} <small>${shortDate(a.start)}, ${time(a.start)}</small></h3><b style="font-size:16px">${esc(a.name)} · ${hm(a.dur)}${a.dist ? ' · ' + distTxt(a.sport, a.dist) : ''}</b>`;
   if (hs) {
     h += `<div class="pills"><div class="pill"><b style="color:var(--bad)">${Math.round(hs.avg)}</b><span>Ø HF</span></div><div class="pill"><b>${num(hs.max) ? Math.round(hs.max) : '–'}</b><span>max HF</span></div>${hs.hasCurve ? `<div class="pill"><b>${hm(hs.above)}</b><span>über Schwelle</span></div>` : ''}<div class="pill"><b style="color:var(--bike)">${Math.round(a.tss || 0)}</b><span>TSS</span></div></div>`;
     if (hs.zones) h += zoneBar(hs.zones);
@@ -75,9 +80,9 @@ function latestCard(a) {
 function vAnalyse() {
   let h = header('Analyse');
   const wf = weekStart(TODAY), wt = addDays(wf, 7);
-  h += `<div class="card"><h3>Disziplinen</h3><div class="tiles">${SPORTS.map(s => { const t = totals(s, wf, wt); return tile(NAME[s], s === 'swim' ? de(t.dist) : de(t.dist / 1000, 1), s === 'swim' ? 'm' : 'km', `diese Woche · ${t.n}× · ${hm(t.dur)}`, C[s], s, 'nav:' + s); }).join('')}</div></div>`;
+  h += `<div class="card"><h3>Disziplinen</h3><div class="tiles">${SPORTS.map(s => { const t = totals(s, wf, wt); return tile(NAME[s], de(t.dist / 1000, s === 'swim' ? 2 : 1), 'km', `diese Woche · ${t.n}× · ${hm(t.dur)}`, C[s], s, 'nav:' + s); }).join('')}</div></div>`;
   const w = WELL[WELL.length - 1];
-  h += `<div class="card"><h3>Werkzeuge</h3><div class="tiles">${tile('Wettkampf', ACTS.length ? dur(racePredict(SET.cda || .3, SET.wetsuit).total) : '–', '', 'Prognose, Taper, Fueling', 'var(--accent)', 'flag', 'nav:race')}${tile('Schlaf & Stress', w?.sleep ? hm(w.sleep.total) : '–', '', w ? `HRV ${num(w.hrv) ? Math.round(w.hrv) + ' ms' : '–'}` : 'keine Daten', 'var(--sleep)', 'moon', 'nav:wellness')}${tile('Live-Puls', BLE.st.connected ? (BLE.st.hr ?? '…') : 'Bluetooth', BLE.st.connected ? 'bpm' : '', 'Uhr als Pulsgurt', 'var(--bad)', 'heart', 'nav:pulse')}${tile('Karte', ACTS.filter(a => a.samples?.some(x => x.lat)).length, 'Strecken', 'alle GPS-Spuren', 'var(--fit)', 'map', 'nav:map')}</div></div>`;
+  h += `<div class="card"><h3>Werkzeuge</h3><div class="tiles">${tile('Fortschritt', weekRings(wf).filter(r => r.k !== 'hours' && r.v >= r.g).length + '/4', 'Ziele', 'Ringe, Bestleistungen, VO2 Max', 'var(--good)', 'rings', 'nav:progress')}${tile('Wettkampf', ACTS.length ? dur(racePredict(SET.cda || .3, SET.wetsuit).total) : '–', '', 'Prognose, Taper, Fueling', 'var(--accent)', 'flag', 'nav:race')}${tile('Schlaf & Stress', w?.sleep ? hm(w.sleep.total) : '–', '', w ? `HRV ${num(w.hrv) ? Math.round(w.hrv) + ' ms' : '–'}` : 'keine Daten', 'var(--sleep)', 'moon', 'nav:wellness')}${tile('Live-Puls', BLE.st.connected ? (BLE.st.hr ?? '…') : 'Bluetooth', BLE.st.connected ? 'bpm' : '', 'Uhr als Pulsgurt', 'var(--bad)', 'heart', 'nav:pulse')}${tile('Karte', ACTS.filter(a => a.samples?.some(x => x.lat)).length, 'Strecken', 'alle GPS-Spuren', 'var(--fit)', 'map', 'nav:map')}</div></div>`;
   return h;
 }
 
@@ -162,7 +167,7 @@ function vWellness() {
   let h = header('Schlaf & Stress', true);
   if (!WELL.length) return h + `<div class="card">${empty('Keine Tageswerte', 'Schlaf, HRV und Ruhepuls kommen über intervals.icu automatisch von deiner Uhr.', '<button class="btn primary" data-act="nav:settings">Uhr verbinden</button>')}</div>`;
   const w = WELL[WELL.length - 1], l28 = WELL.slice(-28), base = mean(l28.map(x => x.hrv).filter(num)), W = cw(false), W2 = cw(true);
-  h += `<div class="tiles">${w.sleep ? tile('Schlaf', hm(w.sleep.total), '', w.sleep.score ? `Score ${w.sleep.score}/100` : '', 'var(--sleep)', 'moon') : ''}${num(w.hrv) ? tile('HRV', Math.round(w.hrv), 'ms', base ? `Basis ${Math.round(base)} ms` : '', 'var(--good)') : ''}${num(w.rhr) ? tile('Ruhepuls', w.rhr, 'bpm', '', 'var(--bad)', 'heart') : ''}${num(w.stress) ? tile('Stress', w.stress, '', '', 'var(--warn)') : ''}${num(w.bb) ? tile('Body Battery', w.bb, '', '', 'var(--fit)', 'bolt') : ''}${num(w.vo2) ? tile('VO2max', de(w.vo2, 1), '', '', 'var(--run)') : ''}${num(w.steps) ? tile('Schritte', de(w.steps), '', '', 'var(--muted)') : ''}</div>`;
+  h += `<div class="tiles">${w.sleep ? tile('Schlaf', hm(w.sleep.total), '', w.sleep.score ? `Score ${w.sleep.score}/100` : '', 'var(--sleep)', 'moon') : ''}${num(w.hrv) ? tile('HRV', Math.round(w.hrv), 'ms', base ? `Basis ${Math.round(base)} ms` : '', 'var(--good)') : ''}${num(w.rhr) ? tile('Ruhepuls', w.rhr, 'bpm', '', 'var(--bad)', 'heart') : ''}${num(w.stress) ? tile('Stress', w.stress, '', '', 'var(--warn)') : ''}${num(w.bb) ? tile('Body Battery', w.bb, '', '', 'var(--fit)', 'bolt') : ''}${num(w.vo2) ? tile('VO2 Max', de(w.vo2, 1), 'ml/kg/min', '', 'var(--run)', 'run', 'nav:progress') : ''}${num(w.steps) ? tile('Schritte', de(w.steps), '', '', 'var(--muted)') : ''}</div>`;
   const l14 = WELL.slice(-14).filter(x => x.sleep);
   if (l14.length) {
     const hasStages = l14.some(x => x.sleep.deep), stg = hasStages ? [['deep', 'Tief', 'var(--z2)'], ['light', 'Leicht', 'var(--fit)'], ['rem', 'REM', 'var(--sleep)'], ['awake', 'Wach', 'var(--z5)']] : [['total', 'Schlaf', 'var(--sleep)']];
@@ -186,6 +191,8 @@ function vRace() {
     <label class="toggle"><input type="checkbox" id="wetsuit" data-change="wetsuit" ${SET.wetsuit ? 'checked' : ''}> Neoprenanzug</label>
     <label for="cda" class="cap fg">CdA (Aeroposition): <b>${de(SET.cda, 2)}</b> m²</label><input type="range" id="cda" min="0.20" max="0.40" step="0.01" value="${SET.cda}" data-change="cda">
     <button class="btn primary big" data-act="live-open">▶ Wettkampfmodus starten</button></div>`;
+  const races = PLAN.filter(p => p.kind === 'race' && endOf(p) >= TODAY).sort((a, b) => a.date - b.date);
+  h += `<div class="card"><h3>${icon('cal', 16)} Wettkampfkalender <small>${races.length ? races.filter(r => !r.tp).length ? races.filter(r => !r.tp).length + ' noch nicht in TrainingPeaks' : 'alle in TrainingPeaks' : ''}</small></h3>${races.length ? `<div class="list">${races.map(p => agendaRow(p, true)).join('')}</div>` : '<span class="muted">Noch keine Wettkämpfe eingetragen. Mit Priorität A/B/C planst du die Saison – A-Rennen werden zum Saisonziel.</span>'}<div><button class="btn primary" data-act="newk:race|${at(addDays(TODAY, 30), 9).getTime()}">${icon('plus', 14)} Wettkampf eintragen</button></div></div>`;
   let row = '';
   if (days > 3 && ACTS.length) {
     const tp = taperBest(), pts = tp.proj, x0 = pts[0].date.getTime(), x1 = pts[pts.length - 1].date.getTime();
@@ -251,30 +258,14 @@ function vMap() {
   return h + `<div class="card"><h3>Heatmap <small>${acts.length} Einheiten</small></h3>${trackSvg(tracks, cw(false), 420)}<span class="cap">Häufig gefahrene und gelaufene Strecken leuchten stärker.</span></div>`;
 }
 
-/* ---------- Kalender ---------- */
-function vCalendar() {
-  const m = S.month, gs = weekStart(m), last = new Date(m.getFullYear(), m.getMonth() + 1, 0), ge = addDays(weekStart(last), 6);
-  let h = header('Kalender');
-  let g = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].map(d => `<div class="wd">${d}</div>`).join('');
-  for (let d = gs; d <= ge; d = addDays(d, 1)) {
-    const done = ACTS.filter(a => sameDay(a.start, d)).map(a => a.sport), pl = planOn(d).filter(p => !isDone(p)).map(p => p.sport);
-    g += `<button data-act="day:${d.getTime()}" class="${d.getMonth() !== m.getMonth() ? 'out' : ''} ${sameDay(d, S.day) ? 'sel' : ''} ${sameDay(d, TODAY) ? 'now' : ''}"><span style="font-weight:${sameDay(d, TODAY) ? 700 : 400}">${d.getDate()}</span><span class="dots">${done.slice(0, 3).map(s => `<i style="background:${C[s] || C.other}"></i>`).join('')}${pl.slice(0, 3).map(s => `<i class="ring" style="border-color:${C[s]}"></i>`).join('')}</span></button>`;
-  }
-  h += `<div class="card"><div class="row" style="justify-content:space-between"><button class="btn" data-act="month:-1" aria-label="Vorheriger Monat">‹</button><h3 style="font-size:18px">${m.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' })}</h3><button class="btn" data-act="month:1" aria-label="Nächster Monat">›</button></div><div class="cal">${g}</div><div class="row" style="justify-content:space-between;flex-wrap:wrap"><div class="legend"><span><i style="background:var(--muted)"></i>erledigt</span><span><i style="border:1.5px solid var(--muted)"></i>geplant</span></div><button class="btn small" data-act="ics">In Apple/Google Kalender exportieren</button></div></div>`;
-  const pl = planOn(S.day), acts = ACTS.filter(a => sameDay(a.start, S.day));
-  h += `<div class="card"><h3>${dayTitle(S.day)}</h3>${!pl.length && !acts.length ? '<span class="muted">Keine Einheiten</span>' : ''}
-    ${pl.map(p => `<div class="act" style="cursor:default"><span class="sport" style="--c:${C[p.sport]}">${ICON[p.sport]}</span><span class="mid"><b>${isDone(p) ? '✓ ' : ''}${esc(p.title)}</b><span>${time(p.date)} · ${hm(p.min * 60)} · geplant</span></span><button class="btn small" data-act="del:${p.id}">Löschen</button></div>`).join('')}
-    ${acts.map(actRow).join('')}
-    ${S.form ? `<form class="plan" id="planform"><label>Sportart<select id="f-sport"><option value="run">Laufen</option><option value="bike">Rad</option><option value="swim">Schwimmen</option></select></label><label>Titel<input id="f-title" value="Lauf" required></label><label>Uhrzeit<input id="f-time" type="time" value="18:00"></label><label>Dauer (min)<input id="f-min" type="number" min="10" max="480" step="5" value="60"></label><button class="btn primary" type="submit">Sichern</button></form>` : `<div><button class="btn primary" data-act="form">+ Einheit planen</button></div>`}</div>`;
-  return h;
-}
-
 /* ---------- Aktivität ---------- */
 function vActivity() {
   const a = byId(S.act), W = cw(false); if (!a) return header('Nicht gefunden', true);
   const sp = a.dur ? a.dist / a.dur : 0, paceVal = a.sport === 'bike' ? de(sp * 3.6, 1) : pv(a.sport === 'swim' ? 100 / sp : 1000 / sp), paceUnit = a.sport === 'bike' ? 'km/h' : a.sport === 'swim' ? '/100m' : '/km';
-  let h = header(esc(a.name), true) + `<span class="muted">${dayTitle(a.start)}, ${time(a.start)} Uhr</span>`;
-  h += `<div class="tiles">${tile('Dauer', dur(a.dur), '', '', C[a.sport] || C.other, 'timer')}${a.dist ? tile('Distanz', a.sport === 'swim' ? de(a.dist) : de(a.dist / 1000, 2), a.sport === 'swim' ? 'm' : 'km', '', C[a.sport], a.sport) : ''}${a.dist ? tile(a.sport === 'bike' ? 'Geschwindigkeit' : 'Pace', paceVal, paceUnit, '', C[a.sport]) : ''}${num(a.avgHr) && !hrSummary(a)?.hasCurve ? tile('Ø Herzfrequenz', Math.round(a.avgHr), 'bpm', num(a.maxHr) ? 'max ' + Math.round(a.maxHr) : '', 'var(--bad)', 'heart') : ''}${tile('TSS', Math.round(a.tss || 0), '', num(a.te) ? 'Aerober Trainingseffekt ' + de(a.te, 1) : '', 'var(--bike)')}${a.elev > 1 ? tile('Höhenmeter', de(a.elev), 'm', '', 'var(--muted)') : ''}</div>`;
+  let h = header(esc(a.name), true) + `<div class="row" style="flex-wrap:wrap;justify-content:space-between"><span class="muted">${dayTitle(a.start)}, ${time(a.start)} Uhr · ${a.source === 'manual' ? 'eingetragen' : a.source === 'demo' ? 'Demo' : 'von der Uhr'}${a.art && !a.name.includes(a.art) ? ' · ' + esc(a.art) : ''}</span><div class="row" style="flex-wrap:wrap"><button class="btn small" data-act="editact:${a.id}">${icon('edit', 14)} Bearbeiten</button><button class="btn small ${a.tp ? '' : 'primary'}" data-act="tpact:${a.id}">${ICON.tp} ${a.tp ? 'In TrainingPeaks ✓' : 'An TrainingPeaks'}</button></div></div>`;
+  if (a.notes) h += `<div class="card"><h3>Notizen</h3><span class="fg" style="white-space:pre-wrap">${esc(a.notes)}</span></div>`;
+  if (a.ex?.length) h += `<div class="card"><h3>${icon('strength', 16, 'var(--str)')} Übungen</h3><div class="tablewrap"><table><thead><tr><th>Übung</th><th>Sätze</th><th>Wdh/Zeit</th><th>Gewicht</th></tr></thead><tbody>${a.ex.map(x => `<tr><td>${esc(x.n)}</td><td>${x.s ?? '–'}</td><td>${esc(x.r || '–')}</td><td>${x.w ? de(x.w, x.w % 1 ? 1 : 0) + ' kg' : '–'}</td></tr>`).join('')}</tbody></table></div></div>`;
+  h += `<div class="tiles">${tile('Dauer', dur(a.dur), '', '', C[a.sport] || C.other, 'timer')}${a.dist ? tile('Distanz', de(a.dist / 1000, 2), 'km', a.sport === 'swim' ? de(a.dist) + ' m' : '', C[a.sport], a.sport) : ''}${a.rpe ? tile('Anstrengung', a.rpe, '/10', RPE_TXT[a.rpe], 'var(--warn)') : ''}${a.kcal ? tile('Kalorien', de(a.kcal), 'kcal', a.source === 'manual' ? 'geschätzt oder eingetragen' : '', 'var(--muted)') : ''}${a.dist ? tile(a.sport === 'bike' ? 'Geschwindigkeit' : 'Pace', paceVal, paceUnit, '', C[a.sport]) : ''}${num(a.avgHr) && !hrSummary(a)?.hasCurve ? tile('Ø Herzfrequenz', Math.round(a.avgHr), 'bpm', num(a.maxHr) ? 'max ' + Math.round(a.maxHr) : '', 'var(--bad)', 'heart') : ''}${tile('TSS', Math.round(a.tss || 0), '', num(a.te) ? 'Aerober Trainingseffekt ' + de(a.te, 1) : '', 'var(--bike)')}${a.elev > 1 ? tile('Höhenmeter', de(a.elev), 'm', '', 'var(--muted)') : ''}</div>`;
   const hs = hrSummary(a);
   if (hs?.hasCurve) {
     const tot = hs.zones.reduce((x, y) => x + y, 0) || 1, dom = hs.zones.indexOf(Math.max(...hs.zones));
@@ -303,6 +294,6 @@ function vActivity() {
     h += `<div class="card"><h3>Bahnen &amp; SWOLF</h3>${chart({ w: W, h: 170, x0: 0, x1: a.lengths.length + 1, y0, y1: Math.max(...ls.map(l => l.y)) + 2, xt: ticks(1, a.lengths.length, 6).map(v => ({ v, l: 'Bahn ' + v })), layers: [(sx, sy) => ls.map(l => `<rect x="${sx(l.x) - Math.max(1, (sx(1) - sx(0)) * .35)}" y="${sy(l.y)}" width="${Math.max(2, (sx(1) - sx(0)) * .7)}" height="${sy(y0) - sy(l.y)}" fill="var(--swim)"/>`).join('')] })}<div class="legend"><span>Ø SWOLF ${de(a.swim?.swolf, 1)}</span><span>${de(a.swim?.rate)} Züge/min</span><span>${de(a.swim?.dps, 2)} m/Zug</span></div></div>`;
   }
   if (a.laps?.length > 1) h += `<div class="card"><h3>Runden</h3><div class="tablewrap"><table><thead><tr><th>#</th><th>Zeit</th><th>Distanz</th><th>${a.sport === 'bike' ? 'km/h' : 'Pace'}</th><th>HF</th>${a.sport === 'bike' ? '<th>Watt</th>' : ''}</tr></thead><tbody>${a.laps.map((l, i) => `<tr><td style="color:${l.interval ? C[a.sport] : 'inherit'}">${i + 1}</td><td>${dur(l.dur)}</td><td>${a.sport === 'swim' ? de(l.dist) + ' m' : km(l.dist, 2)}</td><td>${a.sport === 'bike' ? kmh(l.v) : a.sport === 'swim' ? spaceS(l.v) : pace(l.v)}</td><td>${num(l.hr) ? Math.round(l.hr) : '–'}</td>${a.sport === 'bike' ? `<td>${num(l.p) ? Math.round(l.p) : '–'}</td>` : ''}</tr>`).join('')}</tbody></table></div></div>`;
-  if (a.source !== 'demo') h += `<div><button class="btn small" data-act="delact:${a.id}">Einheit löschen</button></div>`;
+  if (a.source !== 'demo') h += `<div><button class="btn small danger" data-act="delact:${a.id}">Einheit löschen</button></div>`;
   return h;
 }

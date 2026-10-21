@@ -15,7 +15,9 @@ function loadSettings() {
   return {
     profile: { ...DEFAULT_PROFILE, ...(s.profile || {}) },
     race, source: s.source || 'demo', icuKey: s.icuKey || '', design: s.design || 'nacht',
-    lastSync: s.lastSync || null, syncDays: s.syncDays || 120, wetsuit: s.wetsuit ?? true, cda: s.cda || null
+    lastSync: s.lastSync || null, syncDays: s.syncDays || 120, wetsuit: s.wetsuit ?? true, cda: s.cda || null,
+    calView: s.calView || 'month', calHidden: s.calHidden || [], showDone: s.showDone ?? true,
+    goals: s.goals || null, yearGoals: s.yearGoals || null, shortcut: s.shortcut || 'TriCoach', tpIcal: s.tpIcal || '', tpIcalAt: s.tpIcalAt || null
   };
 }
 function saveSettings() {
@@ -24,7 +26,8 @@ function saveSettings() {
 }
 RACE.date = new Date(RACE.date);
 
-function loadPlan() { try { const raw = localStorage.getItem('tricoach-plan'); if (raw) return JSON.parse(raw).map(p => ({ ...p, date: new Date(p.date) })); } catch (e) { } return []; }
+/* Kalender-Einträge. Alte Einträge {id,date,sport,title,min} bleiben gültig (kind = 'workout'). */
+function loadPlan() { try { const raw = localStorage.getItem('tricoach-plan'); if (raw) return JSON.parse(raw).map(p => ({ kind: 'workout', ...p, date: new Date(p.date) })); } catch (e) { } return []; }
 function savePlan() { try { localStorage.setItem('tricoach-plan', JSON.stringify(PLAN)); } catch (e) { } }
 
 /* ---------- IndexedDB ---------- */
@@ -46,23 +49,35 @@ const DB = (() => {
 
 /* ---------- Laden & Ableiten ---------- */
 async function loadData() {
-  if (SET.source === 'demo') { ACTS = Demo.activities(); WELL = Demo.wellness(); }
+  if (SET.source === 'demo') {
+    ACTS = Demo.activities(); WELL = Demo.wellness();
+    try { ACTS.push(...(await DB.all('acts')).filter(a => a.source === 'manual')); } catch (e) { } // eigene Einträge auch im Demo-Modus
+  }
   else {
     try { ACTS = await DB.all('acts'); WELL = (await DB.all('well')).map(w => ({ ...w, date: new Date(w.date) })); }
     catch (e) { ACTS = []; WELL = []; toast('Lokaler Speicher nicht verfügbar: ' + e.message); }
   }
   recompute();
 }
+/* Doppelte Einheiten (gleiche Sportart, Start < 3 min auseinander) zusammenführen. Eigene Einträge bleiben immer erhalten. */
 function dedupe(list) {
   const out = [];
   for (const a of [...list].sort((x, y) => (y.samples?.length || 0) - (x.samples?.length || 0))) {
-    if (!out.some(b => b.sport === a.sport && Math.abs(b.start - a.start) < 180000)) out.push(a);
+    if (a.source === 'manual' || !out.some(b => b.source !== 'manual' && b.sport === a.sport && Math.abs(b.start - a.start) < 180000)) out.push(a);
   }
   return out;
 }
+/* Korrekturen an Uhr-Einheiten (z. B. geschwommene km, Name, RPE, Notizen, TrainingPeaks-Status) – überleben jeden Sync */
+let EDITS = (() => { try { return JSON.parse(localStorage.getItem('tricoach-edits') || '{}'); } catch (e) { return {}; } })();
+function saveEdits() { try { localStorage.setItem('tricoach-edits', JSON.stringify(EDITS)); } catch (e) { } }
+function applyEdit(a) {
+  const e = EDITS[a.id]; if (!e) return;
+  if (a._orig === undefined) a._orig = { name: a.name, dist: a.dist };
+  for (const k of ['name', 'dist', 'rpe', 'notes', 'tp', 'art']) if (e[k] !== undefined) a[k] = e[k];
+}
 function recompute() {
   NOW = new Date(); TODAY = sod(NOW);
-  ACTS.forEach(a => { a.start = new Date(a.start); a.tss = tss(a); });
+  ACTS.forEach(a => { a.start = new Date(a.start); applyEdit(a); a.tss = tss(a); });
   ACTS = dedupe(ACTS).sort((a, b) => b.start - a.start);
   WELL.sort((a, b) => a.date - b.date);
   PMC = pmc(ACTS, addDays(TODAY, -180), TODAY);
@@ -70,7 +85,8 @@ function recompute() {
 }
 const byId = id => ACTS.find(a => a.id === id);
 const planOn = d => PLAN.filter(p => sameDay(p.date, d)).sort((a, b) => a.date - b.date);
-const isDone = p => ACTS.some(a => a.sport === p.sport && sameDay(a.start, p.date));
+const doneFor = p => ACTS.find(a => a.sport === (p.sport || 'other') && sameDay(a.start, p.date));
+const isDone = p => (p.kind || 'workout') === 'workout' && !!doneFor(p);
 
 async function saveActivities(list) {
   if (!list.length) return;
@@ -92,7 +108,7 @@ const ICU = (() => {
     if (!r.ok) throw new Error(`intervals.icu antwortet mit ${r.status}`);
     return asBuffer ? r.arrayBuffer() : r.json();
   }
-  const sportOf = t => /swim/i.test(t) ? 'swim' : /ride|cycl|bike/i.test(t) ? 'bike' : /run/i.test(t) ? 'run' : 'other';
+  const sportOf = t => /swim/i.test(t) ? 'swim' : /ride|cycl|bike/i.test(t) ? 'bike' : /run/i.test(t) ? 'run' : /weight|strength|workout|crossfit|hiit|pilates|yoga/i.test(t) ? 'strength' : 'other';
 
   async function test() { const a = await get('/athlete/0'); return a.name || a.firstname || 'verbunden'; }
 
@@ -112,6 +128,7 @@ const ICU = (() => {
     const sport = sportOf(item.type || '');
     const a = {
       id: 'icu-' + id, extId: String(id), source: 'icu', partial: true, sport, name: name || NAME[sport],
+      art: sport === 'other' ? (item.type || '') : undefined,
       start: new Date(item.start_date_local || item.start_date), dur: item.moving_time || item.elapsed_time || 0, dist: item.distance || 0,
       avgHr: item.average_heartrate ?? null, maxHr: item.max_heartrate ?? null, elev: item.total_elevation_gain ?? null, samples: [], laps: []
     };
@@ -201,15 +218,4 @@ async function importFromWatchFolder() {
     for await (const [name, h] of target.entries()) if (h.kind === 'file' && /\.fit$/i.test(name)) files.push(await h.getFile());
     await importFitFiles(files);
   } catch (e) { if (e.name !== 'AbortError') toast(e.message); }
-}
-
-/* ---------- Kalender-Export (.ics) ---------- */
-function exportIcs() {
-  const fmt = d => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
-  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//TriCoach//DE', 'X-WR-CALNAME:TriCoach'];
-  PLAN.filter(p => p.date >= TODAY).forEach(p => lines.push('BEGIN:VEVENT', `UID:${p.id}@tricoach`, `DTSTAMP:${fmt(new Date())}`, `DTSTART:${fmt(p.date)}`, `DTEND:${fmt(new Date(p.date.getTime() + p.min * 60000))}`, `SUMMARY:${{ swim: '🏊', bike: '🚴', run: '🏃' }[p.sport] || ''} ${p.title}`, 'END:VEVENT'));
-  lines.push('END:VCALENDAR');
-  const url = URL.createObjectURL(new Blob([lines.join('\r\n')], { type: 'text/calendar' }));
-  const a = document.createElement('a'); a.href = url; a.download = 'TriCoach-Training.ics'; document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 5000);
 }

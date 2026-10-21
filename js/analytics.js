@@ -42,13 +42,16 @@ function finalize(a) {
   return a;
 }
 
+/* Gefühlte Anstrengung (RPE 1–10, wie in TrainingPeaks) → Intensitätsfaktor für eingetragene Einheiten ohne Messdaten */
+const RPE_IF = [0, .5, .55, .6, .65, .7, .77, .84, .91, .98, 1.05];
 function tss(a) {
   const h = a.dur / 3600;
   if (a.sport === 'bike' && a.bike?.np) return h * (a.bike.np / P.ftp) ** 2 * 100;
   if (a.sport === 'run' && a.dist > 0) return h * (a.dist / a.dur / thrSpeed()) ** 2 * 100;
   if (a.sport === 'swim' && a.dist > 0) return h * Math.min(1.6, (a.dist / a.dur / cssSpeed())) ** 3 * 100;
+  if (num(a.rpe) && !a.samples?.length) { const i = RPE_IF[clamp(Math.round(a.rpe), 1, 10)]; return h * i * i * 100; }
   if (num(a.avgHr)) { const i = clamp((a.avgHr - P.rhr) / (P.lthr - P.rhr), .3, 1.2); return h * i * i * 100; }
-  return h * 40;
+  return h * (a.sport === 'strength' ? 45 : 40);
 }
 
 /* ---------- Belastung ---------- */
@@ -67,18 +70,19 @@ function pmc(acts, from, to, future = {}, c0 = 0, a0 = 0) {
 }
 function totals(sport, from, to) {
   const r = { n: 0, dist: 0, dur: 0, tss: 0, elev: 0 };
+  if (to < from) return r;
   ACTS.forEach(a => { if ((!sport || a.sport === sport) && a.start >= from && a.start < to) { r.n++; r.dist += a.dist || 0; r.dur += a.dur || 0; r.tss += a.tss || 0; r.elev += a.elev || 0; } });
   return r;
 }
 function weekly(sport, weeks = 10) {
   const ws = weekStart(TODAY), out = [];
-  for (let b = weeks - 1; b >= 0; b--) { const s = addDays(ws, -7 * b), e = addDays(s, 7); out.push({ week: s, ...Object.fromEntries((sport ? [sport] : SPORTS).map(sp => [sp, totals(sp, s, e)])) }); }
+  for (let b = weeks - 1; b >= 0; b--) { const s = addDays(ws, -7 * b), e = addDays(s, 7); out.push({ week: s, ...Object.fromEntries((sport ? [sport] : ALL).map(sp => [sp, totals(sp, s, e)])) }); }
   return out;
 }
 
 /* ---------- Zonen ---------- */
-function hrZones() { const l = P.lthr; return [['Z1 Regeneration', 0, l * .85], ['Z2 Grundlage', l * .85, l * .9], ['Z3 Tempo', l * .9, l * .95], ['Z4 Schwelle', l * .95, l], ['Z5 VO2max', l, 260]]; }
-function powerZones() { const f = P.ftp; return [['Z1 Aktive Erholung', 0, .55], ['Z2 Ausdauer', .55, .75], ['Z3 Tempo', .75, .9], ['Z4 Schwelle', .9, 1.05], ['Z5 VO2max', 1.05, 1.2], ['Z6 Anaerob', 1.2, 1.5], ['Z7 Neuromuskulär', 1.5, 12]].map(([n, a, b]) => [n, a * f, b * f]); }
+function hrZones() { const l = P.lthr; return [['Z1 Regeneration', 0, l * .85], ['Z2 Grundlage', l * .85, l * .9], ['Z3 Tempo', l * .9, l * .95], ['Z4 Schwelle', l * .95, l], ['Z5 VO2 Max', l, 260]]; }
+function powerZones() { const f = P.ftp; return [['Z1 Aktive Erholung', 0, .55], ['Z2 Ausdauer', .55, .75], ['Z3 Tempo', .75, .9], ['Z4 Schwelle', .9, 1.05], ['Z5 VO2 Max', 1.05, 1.2], ['Z6 Anaerob', 1.2, 1.5], ['Z7 Neuromuskulär', 1.5, 12]].map(([n, a, b]) => [n, a * f, b * f]); }
 function timeInZones(acts, zones, key) {
   const res = zones.map(() => 0);
   acts.forEach(a => { const s = a.samples || []; for (let i = 1; i < s.length; i++) { const dt = s[i].t - s[i - 1].t, v = s[i][key]; if (dt <= 0 || dt > 60 || !num(v)) continue; const z = zones.findIndex(([, lo, hi]) => v >= lo && v < hi); if (z >= 0) res[z] += dt; } });

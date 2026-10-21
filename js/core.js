@@ -1,12 +1,16 @@
 'use strict';
 /* TriCoach – Basis: Hilfsfunktionen, Formatierung, Grafik-Bausteine */
 
-const APP_VERSION = '2.1.0';
+const APP_VERSION = '2.2.0';
 const DAY = 86400000;
 const DT = 10; // alle Zeitreihen werden auf 10-s-Raster gebracht
-const SPORTS = ['swim', 'bike', 'run'];
-const NAME = { swim: 'Schwimmen', bike: 'Rad', run: 'Laufen', other: 'Sonstiges' };
-const C = { swim: 'var(--swim)', bike: 'var(--bike)', run: 'var(--run)', other: 'var(--muted)' };
+const SPORTS = ['swim', 'bike', 'run'];                       // Triathlon-Disziplinen (Analysen, Prognosen)
+const ALL = ['swim', 'bike', 'run', 'strength', 'other'];      // alles, was im Kalender und in den Summen zählt
+const NAME = { swim: 'Schwimmen', bike: 'Rad', run: 'Laufen', strength: 'Athletik', other: 'Sonstiges' };
+const C = { swim: 'var(--swim)', bike: 'var(--bike)', run: 'var(--run)', strength: 'var(--str)', other: 'var(--oth)' };
+const hasDist = s => s === 'swim' || s === 'bike' || s === 'run';
+/* Distanzen: Schwimmen in km mit zwei Nachkommastellen (z. B. 2,35 km), sonst km */
+const distTxt = (sport, m) => !m ? '' : sport === 'swim' ? de(m / 1000, m % 1000 ? 2 : 1) + ' km' : km(m, sport === 'bike' ? 0 : 1);
 
 function rng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 const noise = (r, a) => (r() * 2 - 1) * a;
@@ -58,7 +62,22 @@ const ICON = {
   map: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14"/></svg>',
   sync: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 00-14.3-4.3L4 9M4 4v5h5M4 13a8 8 0 0014.3 4.3L20 15M20 20v-5h-5"/></svg>',
   dot: '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>',
+  strength: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5v11M17.5 6.5v11M3.5 9v6M20.5 9v6M6.5 12h11"/></svg>',
+  plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4"/></svg>',
+  trophy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h8v5a4 4 0 01-8 0V4zM8 6H4.5a3 3 0 003.5 4M16 6h3.5a3 3 0 01-3.5 4M12 13v4M8 21h8M9.5 17h5"/></svg>',
+  share: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M8 7l4-4 4 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/></svg>',
+  search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg>',
+  bell: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16V11a6 6 0 0112 0v5l2 2H4l2-2zM10 21h4"/></svg>',
+  repeat: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2l3 3-3 3M4 11V9a4 4 0 014-4h12M7 22l-3-3 3-3M20 13v2a4 4 0 01-4 4H4"/></svg>',
+  pin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 21s-6-5.6-6-11a6 6 0 0112 0c0 5.4-6 11-6 11z"/><circle cx="12" cy="10" r="2.2"/></svg>',
+  list: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></svg>',
+  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+  tp: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-6 4 3 5-7 4 5"/><circle cx="17" cy="7" r="1.6" fill="currentColor"/></svg>',
+  star: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg>',
+  rings: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5.5"/><circle cx="12" cy="12" r="2"/></svg>',
 };
+const sicon = s => ICON[s] || ICON.other;
 const icon = (name, size = 16, color) => (ICON[name] || ICON.dot).replace('<svg', `<svg width="${size}" height="${size}"${color ? ` style="color:${color}"` : ''}`);
 
 /* ---------- UI-Bausteine ---------- */

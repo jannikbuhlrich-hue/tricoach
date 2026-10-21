@@ -96,8 +96,16 @@ const Demo = (() => {
         case 6: out.push(bike(day, 9, 'end', (150 + r() * 60) * vol, fit, prog, r)); break;
         default: out.push(run(day, 9, 'long', (75 + r() * 30) * vol, fit, r));
       }
+      // Athletik montags und donnerstags abends, ab und zu Kitesurfen am Wochenende
+      if ((day.getDay() === 1 || day.getDay() === 4) && r() < .8) out.push(extra(day, 19, 'strength', day.getDay() === 1 ? 'Kraft' : 'Stabi & Core', 40 + Math.round(r() * 20), r));
+      if (day.getDay() === 6 && r() < .35) out.push(extra(day, 15, 'other', 'Kitesurfen', 90 + Math.round(r() * 60), r));
     }
     return out.filter(a => a.start.getTime() + a.dur * 1000 <= Date.now());
+  }
+
+  function extra(day, hour, sport, art, minutes, r) {
+    const start = at(day, hour, 0), dur = minutes * 60, avgHr = Math.round((sport === 'strength' ? 118 : 128) + noise(r, 8));
+    return finalize({ id: `demo-${sport}-${start.getTime()}`, source: 'demo', sport, art, name: sport === 'strength' ? `Athletik · ${art}` : art, start, dur, dist: 0, avgHr, maxHr: avgHr + 30, rpe: sport === 'strength' ? 6 : 5, samples: [], laps: [] });
   }
 
   function wellness(days = 150) {

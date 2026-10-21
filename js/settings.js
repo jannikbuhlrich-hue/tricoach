@@ -34,6 +34,15 @@ function vSettings() {
     <div class="opt"><b>Live-Puls per Bluetooth</b><span class="cap fg">Die Uhr als Pulsgurt nutzen, z. B. beim Indoor-Training am PC.</span><div><button class="btn" data-act="nav:pulse">Live-Puls öffnen</button></div></div>
     <label class="toggle"><input type="checkbox" id="demo" data-change="demo" ${src === 'demo' ? 'checked' : ''}> Demo-Daten anzeigen</label></div>`;
 
+  // TrainingPeaks
+  h += tpSettingsCard();
+
+  // Kalender & Hinweise
+  const perm = window.Notification?.permission;
+  h += `<div class="card"><h3>${icon('bell')} Kalender &amp; Hinweise</h3><span class="cap fg">Hinweise (z. B. „1 Tag vorher“) zeigt TriCoach, solange die App offen ist. Zuverlässig auch bei geschlossener App: im Kalender <b>„An Apple Kalender senden“</b> – dann erinnert dich Apple Kalender, inklusive Wiederholungen.</span>
+    <div class="row" style="flex-wrap:wrap">${perm === 'granted' ? '<b class="good">✓ Mitteilungen erlaubt</b>' : `<button class="btn" data-act="notify">${icon('bell', 14)} Mitteilungen erlauben</button>`}<button class="btn" data-act="ics">${icon('share', 14)} An Apple Kalender senden</button></div>
+    <span class="cap">Siri &amp; Kurzbefehle: Ein Kurzbefehl „URL öffnen“ mit <code>${esc(location.origin + location.pathname)}#log</code> öffnet direkt „Einheit eintragen“ – z. B. „Hey Siri, Training eintragen“.</span></div>`;
+
   // Design
   h += `<div class="card"><h3>Design</h3><div class="designs">${DESIGNS.map(d => `<button class="design ${SET.design === d.id ? 'on' : ''}" data-act="design:${d.id}"><span class="swatch" style="background:${d.sw[0]}"><i style="background:${d.sw[1]}"></i><em style="background:${d.sw[2]}"></em><u style="background:${d.sw[3]}"></u><u style="background:${d.sw[4]}"></u><u style="background:${d.sw[5]}"></u></span><b>${d.name}</b><span class="cap">${d.desc}</span></button>`).join('')}</div></div>`;
 
@@ -64,6 +73,8 @@ function vSettings() {
 }
 
 async function handleSettingsSubmit(id) {
+  if (id === 'tpform') { SET.shortcut = document.getElementById('tp-sc').value.trim() || 'TriCoach'; saveSettings(); toast('Gesichert'); render(); }
+  if (id === 'tpical') { SET.tpIcal = document.getElementById('tp-ical').value.trim(); saveSettings(); if (SET.tpIcal) { toast('Hole Plan …'); await fetchTpIcal(true); } render(); }
   if (id === 'icuform') {
     SET.icuKey = document.getElementById('icukey').value.trim();
     SET.syncDays = +document.getElementById('icudays').value;
@@ -89,7 +100,7 @@ async function handleSettingsSubmit(id) {
 }
 
 function backup() {
-  const data = JSON.stringify({ version: APP_VERSION, settings: { ...SET, icuKey: undefined }, plan: PLAN, activities: SET.source === 'demo' ? [] : ACTS, wellness: WELL }, null, 0);
+  const data = JSON.stringify({ version: APP_VERSION, settings: { ...SET, icuKey: undefined }, plan: PLAN, edits: EDITS, activities: SET.source === 'demo' ? ACTS.filter(a => a.source === 'manual') : ACTS, wellness: WELL }, null, 0);
   const url = URL.createObjectURL(new Blob([data], { type: 'application/json' }));
   const a = document.createElement('a'); a.href = url; a.download = `TriCoach-Backup-${isoDay(new Date())}.json`; document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 5000);
