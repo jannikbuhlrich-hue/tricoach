@@ -14,6 +14,13 @@ Triathlon-App für die Garmin Forerunner 265 – läuft auf iPhone, iPad und PC 
 - **USB (PC):** Uhr anstecken, Ordner `GARMIN/Activity` wählen.
 - **Live-Puls:** Uhr auf „HF übertragen“, in TriCoach „Live-Puls“ → verbinden (Chrome/Edge/Android).
 
+## Neu in 2.3
+- **Mein Tag** (Start-Tab „Heute“): Schule, Training, Termine, Hausaufgaben und Prüfungen in einem Tagesablauf, ab 17 Uhr automatisch der nächste Tag.
+- **Schule (WebUntis):** Stundenplan mit Entfall/Vertretung/Raumänderung, Infos der Lehrkräfte, Nachrichten des Tages, Hausaufgaben (abhaken, eigene ergänzen), Prüfungen. Auch als Ebene „Schule“ im Kalender.
+  Abruf über den GitHub-Job `.github/workflows/schule.yml` (`tools/untis-sync.mjs`) alle 30 min, Daten AES-verschlüsselt im Branch `schule-daten` – lesbar nur mit deinem Schlüssel. Einrichtung: App → Einstellungen → Schule.
+- Apple Kalender: Stundenplan per WebUntis-iCal-Abo, Hausaufgaben/Prüfungen per .ics mit Erinnerung.
+- Eintragen ohne Schnellwahl – km werden immer selbst eingetippt; Athletik ohne Schwerpunkt-Auswahl.
+
 ## Neu in 2.2
 - **Kalender wie Apple Kalender:** Tag · Woche · Monat (mit KW) · Jahr · Liste, ganztägig/mehrtägig, Wiederholungen (auch eigene Wochentage, Ende nach Datum/Anzahl, „nur dieser Termin“), zwei Hinweise, Ort, URL, Notizen, Kalender ein-/ausblenden, Suche, Drag & Drop, Duplizieren, Plan-Ampel wie TrainingPeaks, .ics-Export (mit Wiederholung + Erinnerung) und -Import.
 - **Einheiten eintragen:** Schwimmen in km (oder Bahnen × Becken), Rad, Laufen, **Athletik** (Schwerpunkt + Übungen mit Sätzen/Wdh/kg), **Sonstiges** (z. B. Kitesurfen), RPE, Notizen. Uhr-Einheiten korrigieren (bleibt nach jedem Sync).
@@ -38,6 +45,8 @@ js/calendar.js   Kalender (Ansichten, Editor, Wiederholungen, .ics)
 js/log.js        Einheiten eintragen/bearbeiten
 js/tp.js         TrainingPeaks-Brücke (Apple Health, FIT-Writer, Übergabe)
 js/progress.js   Fortschritt (Ringe, Trends, Bestleistungen, VO2 Max)
+js/school.js     Mein Tag + Schule (WebUntis-Daten entschlüsseln, Stundenplan, Hausaufgaben)
+tools/           untis-sync.mjs für den GitHub-Job
 ios-native/      Native SwiftUI-Version (braucht Mac + Xcode)
 ```
 Deine Trainingsdaten und Schlüssel bleiben nur auf deinen Geräten.

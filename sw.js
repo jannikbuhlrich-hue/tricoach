@@ -1,8 +1,8 @@
 /* TriCoach Service Worker – Offline-Betrieb und Updates.
    Für ein Update: VERSION erhöhen (und APP_VERSION in js/core.js). */
-const VERSION = 'tricoach-2.2.0';
+const VERSION = 'tricoach-2.3.0';
 const FILES = ['./', 'index.html', 'manifest.webmanifest', 'css/app.css',
-  'js/core.js', 'js/analytics.js', 'js/demo.js', 'js/fit.js', 'js/data.js', 'js/ble.js', 'js/views.js', 'js/calendar.js', 'js/log.js', 'js/tp.js', 'js/progress.js', 'js/settings.js', 'js/app.js',
+  'js/core.js', 'js/analytics.js', 'js/demo.js', 'js/fit.js', 'js/data.js', 'js/ble.js', 'js/views.js', 'js/calendar.js', 'js/log.js', 'js/tp.js', 'js/progress.js', 'js/school.js', 'js/settings.js', 'js/app.js',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png'];
 
 self.addEventListener('install', e => { e.waitUntil(caches.open(VERSION).then(c => c.addAll(FILES))); });

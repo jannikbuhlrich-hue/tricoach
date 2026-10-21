@@ -4,11 +4,11 @@
    zwei Hinweise, Ort, URL, Notizen, Kalender ein-/ausblenden, Suche, Drag & Drop, Duplizieren,
    Wettkämpfe mit Priorität A/B/C, Termine, .ics-Export (inkl. Wiederholung + Erinnerung) und .ics-Import. */
 
-const CALS = [['swim', 'Schwimmen'], ['bike', 'Rad'], ['run', 'Laufen'], ['strength', 'Athletik'], ['other', 'Sonstiges'], ['race', 'Wettkämpfe'], ['event', 'Termine']];
-const calKey = p => p.kind === 'race' ? 'race' : p.kind === 'event' ? 'event' : (p.sport || 'other');
-const calColor = k => ({ race: 'var(--accent)', event: 'var(--fit)' }[k] || C[k] || C.other);
+const CALS = [['swim', 'Schwimmen'], ['bike', 'Rad'], ['run', 'Laufen'], ['strength', 'Athletik'], ['other', 'Sonstiges'], ['race', 'Wettkämpfe'], ['event', 'Termine'], ['school', 'Schule']];
+const calKey = p => p.kind === 'race' ? 'race' : p.kind === 'event' ? 'event' : p.kind === 'school' ? 'school' : (p.sport || 'other');
+const calColor = k => ({ race: 'var(--accent)', event: 'var(--fit)', school: 'var(--school)' }[k] || C[k] || C.other);
 const pColor = p => calColor(calKey(p));
-const pIcon = p => p.kind === 'race' ? ICON.flag : p.kind === 'event' ? ICON.cal : sicon(p.sport);
+const pIcon = p => p.kind === 'race' ? ICON.flag : p.kind === 'event' ? ICON.cal : p.kind === 'school' ? ICON.school : sicon(p.sport);
 const calVisible = k => !SET.calHidden.includes(k);
 const ALERTS = [['', 'Keiner'], [0, 'Zum Zeitpunkt'], [5, '5 Minuten vorher'], [15, '15 Minuten vorher'], [30, '30 Minuten vorher'], [60, '1 Stunde vorher'], [120, '2 Stunden vorher'], [1440, '1 Tag vorher'], [2880, '2 Tage vorher'], [10080, '1 Woche vorher']];
 const REPEATS = [['', 'Nie'], ['daily', 'Täglich'], ['weekly', 'Wöchentlich'], ['biweekly', 'Alle 2 Wochen'], ['monthly', 'Monatlich'], ['yearly', 'Jährlich'], ['custom', 'Eigene …']];
@@ -53,8 +53,9 @@ function occurrences(p, from, to) {
   }
   return out;
 }
+/* all = alle eigenen Einträge (ohne Filter, ohne Schule) – für Erinnerungen, Plan-Erfüllung, Tagesübersicht */
 function calItems(from, to, all) {
-  return PLAN.flatMap(p => occurrences(p, from, to)).filter(p => all || calVisible(calKey(p)))
+  return [...PLAN.flatMap(p => occurrences(p, from, to)), ...(!all && calVisible('school') ? schoolItems(from, to) : [])].filter(p => all || calVisible(calKey(p)))
     .sort((a, b) => (b.allDay ? 1 : 0) - (a.allDay ? 1 : 0) || a.date - b.date);
 }
 const actsIn = (from, to) => SET.showDone ? ACTS.filter(a => a.start >= from && a.start < to && calVisible(a.sport)) : [];
@@ -112,14 +113,14 @@ function calFilterPanel() {
 /* Monat: Apple-Raster mit Kalenderwochen, Einträge als Chips (schmal: Punkte) */
 function calMonth() {
   const m = monthStart(S.day), gs = weekStart(m), last = new Date(m.getFullYear(), m.getMonth() + 1, 0), ge = addDays(weekStart(last), 7);
-  const items = calItems(gs, ge), acts = actsIn(gs, ge);
+  const items = calItems(gs, ge).filter(p => p.kind !== 'school' || p.exam || p.cancelled || p.changed), acts = actsIn(gs, ge);
   let g = '<div class="kwh">KW</div>' + WD.map(d => `<div class="wd">${d}</div>`).join('');
   for (let ws = gs; ws < ge; ws = addDays(ws, 7)) {
     g += `<div class="kw">${kw(ws)}</div>`;
     for (let i = 0; i < 7; i++) {
       const d = addDays(ws, i), e = addDays(d, 1), its = items.filter(p => p.date < e && endOf(p) > d);
       const matched = new Set(its.map(p => compliance(p)?.a?.id).filter(Boolean)), extra = acts.filter(a => sameDay(a.start, d) && !matched.has(a.id));
-      const chips = [...its.map(p => { const c = compliance(p); return `<span class="ev ${p.kind || 'workout'} ${c?.a ? 'done' : ''}" style="--c:${pColor(p)}" data-act="edit:${ref(p)}" draggable="true" data-drag="${ref(p)}">${cplDot(c)}${p.allDay || !sameDay(p.date, d) ? '' : `<em>${time(p.date)}</em>`}${esc(p.title)}</span>`; }),
+      const chips = [...its.map(p => { const c = compliance(p); return `<span class="ev ${p.kind || 'workout'} ${c?.a ? 'done' : ''} ${p.cancelled ? 'cancelled' : ''}" style="--c:${pColor(p)}" data-act="edit:${ref(p)}" ${p.kind === 'school' ? '' : `draggable="true" data-drag="${ref(p)}"`}>${cplDot(c)}${p.allDay || !sameDay(p.date, d) ? '' : `<em>${time(p.date)}</em>`}${esc(p.title)}</span>`; }),
         ...extra.map(a => `<span class="ev done act" style="--c:${C[a.sport] || C.other}" data-act="open:${a.id}">✓ ${esc(a.name)}</span>`)];
       const dots = [...its.map(p => `<i class="${compliance(p)?.a ? '' : 'ring'}" style="${compliance(p)?.a ? 'background' : 'border-color'}:${pColor(p)}"></i>`), ...extra.map(a => `<i style="background:${C[a.sport] || C.other}"></i>`)];
       g += `<div role="button" tabindex="0" data-act="day:${d.getTime()}" data-drop="${d.getTime()}" class="mc ${d.getMonth() !== m.getMonth() ? 'out' : ''} ${sameDay(d, S.day) ? 'sel' : ''} ${sameDay(d, TODAY) ? 'now' : ''}"><span class="dn">${d.getDate()}</span><span class="evs">${chips.slice(0, 3).join('')}${chips.length > 3 ? `<span class="more">+${chips.length - 3} weitere</span>` : ''}</span><span class="dots">${dots.slice(0, 4).join('')}</span></div>`;
@@ -158,7 +159,7 @@ function timeGrid(days) {
     for (const b of blocks) {
  const hgt = Math.max(18, (b.e - b.s) / 60 * PXH - 2), sh = hgt < 32 ? 'short' : '';
       const st = `top:${b.s / 60 * PXH}px;height:${hgt}px;left:calc(${b.col} * 100% / ${b.n});width:calc(100% / ${b.n} - 3px)`;
-      if (b.p) { const p = b.p, c = compliance(p); body += `<button class="blk ${sh} ${p.kind || 'workout'} ${c?.a ? 'done' : ''}" style="${st};--c:${pColor(p)}" data-act="edit:${ref(p)}" draggable="true" data-drag="${ref(p)}"><b>${cplDot(c)}${esc(p.title)}</b><span>${time(p.date)}${p.location ? ' · ' + esc(p.location) : ''}</span></button>`; }
+      if (b.p) { const p = b.p, c = compliance(p); body += `<button class="blk ${sh} ${p.kind || 'workout'} ${c?.a ? 'done' : ''} ${p.cancelled ? 'cancelled' : ''} ${p.changed ? 'changed' : ''}" style="${st};--c:${pColor(p)}" data-act="edit:${ref(p)}" ${p.kind === 'school' ? '' : `draggable="true" data-drag="${ref(p)}"`}><b>${cplDot(c)}${esc(p.title)}</b><span>${time(p.date)}${p.location ? ' · ' + esc(p.location) : ''}</span></button>`; }
       else { const a = b.a; body += `<button class="blk ${sh} act done" style="${st};--c:${C[a.sport] || C.other}" data-act="open:${a.id}"><b>✓ ${esc(a.name)}</b><span>${time(a.start)} · ${hm(a.dur)}</span></button>`; }
     }
     if (sameDay(d, NOW)) { const n = (NOW - ds) / 60000 - h0 * 60; if (n > 0 && n < (h1 - h0) * 60) body += `<div class="nowline" style="top:${n / 60 * PXH}px"></div>`; }
@@ -191,7 +192,7 @@ function calYear() {
 
 /* Liste: die nächsten 90 Tage, nach Tagen gruppiert */
 function calList() {
-  const items = calItems(TODAY, addDays(TODAY, 90));
+  const items = calItems(TODAY, addDays(TODAY, 90)).filter(p => p.kind !== 'school' || p.exam || p.cancelled || p.changed);
   if (!items.length) return empty('Nichts geplant', 'In den nächsten 90 Tagen stehen keine Einträge im Kalender.', `<button class="btn primary" data-act="addmenu">${icon('plus', 14)} Neu</button>`);
   const groups = new Map(); items.forEach(p => { const k = isoDay(p.date); (groups.get(k) || groups.set(k, []).get(k)).push(p); });
   return [...groups.entries()].map(([k, ps]) => `<div class="lday"><h4>${dayTitle(new Date(k + 'T00:00:00'))}</h4><div class="list">${ps.map(agendaRow).join('')}</div></div>`).join('');
@@ -206,7 +207,7 @@ function calSearchResults() {
 
 function agendaRow(p, withDate) {
   const c = compliance(p), when = p.allDay ? (p.days > 1 ? `${p.days} Tage` : 'ganztägig') : `${time(p.date)}–${time(endOf(p))}`;
-  return `<button class="act" data-act="edit:${ref(p)}"><span class="sport" style="--c:${pColor(p)}">${pIcon(p)}</span><span class="mid"><b>${c?.a ? '✓ ' : ''}${esc(p.title)}${p.kind === 'race' ? ` <span class="prio p${p.prio || 'A'}">${p.prio || 'A'}</span>` : ''}</b><span>${withDate ? shortDate(p.date) + ' · ' : ''}${when}${p.dist ? ' · ' + distTxt(p.sport, p.dist) : ''}${p.location ? ' · ' + esc(p.location) : ''}${p.rrule ? ' · ↻' : ''}${p.alarm != null ? ' · 🔔' : ''}</span></span><span class="end">${c ? `<span class="cpl" style="--c:${COMPL[c.k][0]}">${COMPL[c.k][1]}</span>` : ''}${p.kind === 'race' ? (p.tp ? '<span class="cpl" style="--c:var(--good)">in TP</span>' : '<span class="cpl" style="--c:var(--warn)">nicht in TP</span>') : ''}</span></button>`;
+  return `<button class="act" data-act="edit:${ref(p)}"><span class="sport" style="--c:${pColor(p)}">${pIcon(p)}</span><span class="mid"><b class="${p.cancelled ? 'strike' : ''}">${c?.a ? '✓ ' : ''}${esc(p.title)}${p.kind === 'race' ? ` <span class="prio p${p.prio || 'A'}">${p.prio || 'A'}</span>` : ''}</b><span>${withDate ? shortDate(p.date) + ' · ' : ''}${when}${p.dist ? ' · ' + distTxt(p.sport, p.dist) : ''}${p.location ? ' · ' + esc(p.location) : ''}${p.rrule ? ' · ↻' : ''}${p.alarm != null ? ' · 🔔' : ''}</span></span><span class="end">${c ? `<span class="cpl" style="--c:${COMPL[c.k][0]}">${COMPL[c.k][1]}</span>` : ''}${p.kind === 'race' ? (p.tp ? '<span class="cpl" style="--c:var(--good)">in TP</span>' : '<span class="cpl" style="--c:var(--warn)">nicht in TP</span>') : ''}</span></button>`;
 }
 function dayAgenda(d, compact) {
   const items = calItems(sod(d), addDays(sod(d), 1)), matched = new Set(items.map(p => compliance(p)?.a?.id).filter(Boolean)), acts = ACTS.filter(a => sameDay(a.start, d) && !matched.has(a.id));
@@ -232,12 +233,15 @@ function newDraft(kind, date) {
   return { kind, sport: kind === 'workout' ? 'run' : undefined, title: '', date: d, allDay: false, min: kind === 'race' ? 150 : 60, days: 1, location: '', notes: '', url: '', alarm: kind === 'race' ? 1440 : null, alarm2: null, rrule: null, prio: 'A', fmt: 'olympic', goal: '', season: false, dist: null, art: '', tp: false };
 }
 function openPlanEditor(r) {
-  const [id, occ] = r.split('|'), m = masterOf(id); if (!m) return;
+  const [id, occ] = r.split('|');
+  if (id.startsWith('su-')) { S.sheet = { t: 'lesson', k: `${id.slice(3, 13)}|${id.slice(14, 19)}` }; render(); return; }
+  if (id.startsWith('ex-')) { go('school'); return; }
+  const m = masterOf(id); if (!m) return;
   const d = { ...m, date: occ ? new Date(occurrences(m, sod(new Date(occ + 'T00:00:00')), addDays(sod(new Date(occ + 'T00:00:00')), 1))[0]?.date || m.date) : new Date(m.date) };
   if (m.rrule) d.rrule = { ...m.rrule };
   S.sheet = { t: 'plan', id, occ: m.rrule ? occ : null, occDate: new Date(d.date), d }; render();
 }
-const defaultTitle = d => d.kind === 'race' ? 'Wettkampf' : d.kind === 'event' ? 'Termin' : d.sport === 'strength' ? `Athletik${d.art ? ' · ' + d.art : ''}` : d.sport === 'other' ? (d.art || 'Training') : { run: 'Lauf', bike: 'Radeinheit', swim: 'Schwimmen' }[d.sport];
+const defaultTitle = d => d.kind === 'race' ? 'Wettkampf' : d.kind === 'event' ? 'Termin' : d.sport === 'strength' ? 'Athletik' : d.sport === 'other' ? (d.art || 'Training') : { run: 'Lauf', bike: 'Radeinheit', swim: 'Schwimmen' }[d.sport];
 
 function sheetWrap(title, body, form, foot = '') {
   const inner = `<div class="sheet-head"><button type="button" class="linkbtn" data-act="sheet-close">Abbrechen</button><b>${title}</b>${form ? `<button class="linkbtn strong" type="submit" name="scope" value="all">Sichern</button>` : '<span></span>'}</div><div class="sheet-body">${body}</div>${foot}`;
@@ -254,7 +258,6 @@ function planSheet() {
   b += fg([`<input name="f-title" class="big" placeholder="${defaultTitle(d)}" value="${esc(d.title)}" autocomplete="off">`, `<input name="f-loc" placeholder="Ort" value="${esc(d.location || '')}" autocomplete="off">`]);
   if (k === 'workout') {
     b += fg([frow('Sportart', `<select name="f-sport" data-change="sheet">${opts(ALL.map(x => [x, NAME[x]]), d.sport)}</select>`),
-      d.sport === 'strength' ? frow('Schwerpunkt', `<select name="f-art">${opts([['', '–'], ...STR_FOCUS.map(x => [x, x])], d.art)}</select>`) : '',
       d.sport === 'other' ? frow('Art', `<input name="f-art" list="othertypes" value="${esc(d.art || '')}" placeholder="z. B. Kitesurfen"><datalist id="othertypes">${OTHER_TYPES.map(x => `<option value="${x}">`).join('')}</datalist>`) : '',
       hasDist(d.sport) ? frow('Distanz (km)', `<input name="f-dist" type="number" inputmode="decimal" step="${d.sport === 'swim' ? '0.05' : '0.1'}" min="0" value="${d.dist ? +(d.dist / 1000).toFixed(2) : ''}" placeholder="optional">`) : '']);
   }

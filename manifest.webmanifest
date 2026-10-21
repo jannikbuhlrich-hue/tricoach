@@ -18,6 +18,7 @@
     { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
   "shortcuts": [
+    { "name": "Mein Tag", "url": "./#today", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
     { "name": "Einheit eintragen", "url": "./#log", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
     { "name": "Kalender", "url": "./#calendar", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
     { "name": "Fortschritt", "url": "./#progress", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },

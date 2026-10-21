@@ -34,8 +34,9 @@ function vSettings() {
     <div class="opt"><b>Live-Puls per Bluetooth</b><span class="cap fg">Die Uhr als Pulsgurt nutzen, z. B. beim Indoor-Training am PC.</span><div><button class="btn" data-act="nav:pulse">Live-Puls öffnen</button></div></div>
     <label class="toggle"><input type="checkbox" id="demo" data-change="demo" ${src === 'demo' ? 'checked' : ''}> Demo-Daten anzeigen</label></div>`;
 
-  // TrainingPeaks
+  // TrainingPeaks & Schule
   h += tpSettingsCard();
+  h += schoolSettingsCard();
 
   // Kalender & Hinweise
   const perm = window.Notification?.permission;

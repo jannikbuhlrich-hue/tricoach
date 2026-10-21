@@ -5,7 +5,7 @@
 :root {
   --bg: #0b0d12; --bg2: #0b0d12; --surface: #151822; --surface2: #1d2130; --line: #272c3c;
   --fg: #eef0f6; --muted: #8b91a4; --faint: #5d6376;
-  --accent: #f24566; --on-accent: #fff; --swim: #33b8f2; --bike: #ff9426; --run: #4dd973; --str: #c77dff; --oth: #2fd6c3;
+  --accent: #f24566; --on-accent: #fff; --swim: #33b8f2; --bike: #ff9426; --run: #4dd973; --str: #c77dff; --oth: #2fd6c3; --school: #9aa8ff;
   --fit: #5a8cff; --fat: #f2598c; --form: #ffcc33; --sleep: #8f7bff;
   --good: #3ccf74; --warn: #ffb020; --bad: #ff5a5a;
   --z1: #7b8194; --z2: #3d8bff; --z3: #3ccf74; --z4: #ffcc33; --z5: #ff8a3d; --z6: #ff5a5a; --z7: #b36bff;
@@ -19,7 +19,7 @@
 [data-design="gletscher"] {
   --bg: #eef2f6; --bg2: #e4eaf1; --surface: #ffffff; --surface2: #eef2f7; --line: #dde3ec;
   --fg: #111827; --muted: #5b6475; --faint: #9aa3b2;
-  --accent: #2453ff; --swim: #0a8fd1; --bike: #e36b00; --run: #11a34a; --str: #8b3fd9; --oth: #0f9c8c;
+  --accent: #2453ff; --swim: #0a8fd1; --bike: #e36b00; --run: #11a34a; --str: #8b3fd9; --oth: #0f9c8c; --school: #4b5bdc;
   --fit: #2453ff; --fat: #d6336c; --form: #c98a00; --sleep: #6a4cff;
   --good: #11a34a; --warn: #c98a00; --bad: #e03131;
   --z1: #9aa3b2; --z2: #3b82f6; --z3: #16a34a; --z4: #d4a106; --z5: #ea7a1a; --z6: #e03131; --z7: #8b5cf6;
@@ -30,7 +30,7 @@
 [data-design="asphalt"] {
   --bg: #18191c; --bg2: #18191c; --surface: #222327; --surface2: #2b2c31; --line: #34363c;
   --fg: #f3f1ee; --muted: #9a978f; --faint: #66645e;
-  --accent: #ff6a13; --swim: #4cc3ff; --bike: #ffb000; --run: #9be564; --str: #d08cff; --oth: #5ee0cf;
+  --accent: #ff6a13; --swim: #4cc3ff; --bike: #ffb000; --run: #9be564; --str: #d08cff; --oth: #5ee0cf; --school: #a7b4ff;
   --fit: #4cc3ff; --fat: #ff6a13; --form: #ffe14d; --sleep: #b49cff;
   --r: 6px; --tile-r: 4px; --label-tt: uppercase; --label-ls: .08em;
   color-scheme: dark;
@@ -39,7 +39,7 @@
 [data-design="nordsee"] {
   --bg: #06222b; --bg2: #0a2f3a; --surface: #0b3340; --surface2: #11414f; --line: #17505f;
   --fg: #eaf6f7; --muted: #8fb3ba; --faint: #5a8590;
-  --accent: #ff7a59; --swim: #5fd4ff; --bike: #ffc15e; --run: #7ef0a8; --str: #d9a3ff; --oth: #4ff0d8;
+  --accent: #ff7a59; --swim: #5fd4ff; --bike: #ffc15e; --run: #7ef0a8; --str: #d9a3ff; --oth: #4ff0d8; --school: #b3c0ff;
   --fit: #5fd4ff; --fat: #ff7a59; --form: #ffe08a; --sleep: #c3a6ff;
   --z2: #5fd4ff; --z3: #7ef0a8; --r: 24px; --tile-r: 20px; --card-border: 1px solid rgba(255,255,255,.06);
   color-scheme: dark;
@@ -413,3 +413,46 @@ a.btn { text-decoration: none }
 .sheet-head b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center }
 .weekstrip .cap { white-space: nowrap; font-size: 10.5px }
 .opt .btn:not(.primary) { background: var(--surface); border: 1px solid var(--line) }
+
+/* ===================== 2.3: Mein Tag & Schule ===================== */
+.strike { text-decoration: line-through; opacity: .7 }
+.ev.school { border-left-style: dotted }
+.ev.cancelled, .blk.cancelled { --c: var(--bad) !important; text-decoration: line-through; opacity: .75 }
+.blk.changed { --c: var(--warn) !important }
+.blk.school { background: color-mix(in srgb, var(--c) 14%, var(--surface)) }
+.timeline { display: flex; flex-direction: column; gap: 6px }
+.lrow { --c: var(--school); display: flex; gap: 12px; align-items: stretch; border: 0; background: color-mix(in srgb, var(--c) 10%, var(--surface2)); border-left: 4px solid var(--c); border-radius: 10px; padding: 8px 12px; text-align: left; color: var(--fg); width: 100% }
+.lrow .lt { font-variant-numeric: tabular-nums; font-weight: 650; font-size: 13px; min-width: 44px; line-height: 1.25 }
+.lrow .lt small { color: var(--muted); font-weight: 500 }
+.lrow .lmid { display: flex; flex-direction: column; gap: 1px; min-width: 0 }
+.lrow .lmid b { font-size: 14.5px }
+.lrow .lmid span { font-size: 12px; color: var(--muted) }
+.lrow .lmid em { font-style: normal; font-size: 12.5px; color: var(--c); font-weight: 600 }
+.lrow.cancel { --c: var(--bad) } .lrow.cancel b { text-decoration: line-through }
+.lrow.chg { --c: var(--warn) }
+.lrow.done { background: color-mix(in srgb, var(--c) 22%, var(--surface2)) }
+.nowmark { display: flex; align-items: center; gap: 8px; color: var(--bad); font-size: 11.5px; font-weight: 700 }
+.nowmark::before, .nowmark::after { content: ""; height: 2px; background: var(--bad); flex: 1; border-radius: 2px }
+.nowmark::before { flex: 0 0 10px }
+.hw { display: flex; gap: 12px; align-items: flex-start; padding: 8px 0; border-bottom: 1px solid var(--line) }
+.hw:last-of-type { border-bottom: 0 }
+.hw > div { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0 }
+.hw b { font-size: 14px }
+.hw .hwdue { text-align: right; white-space: nowrap }
+.hw.late .hwdue { color: var(--bad); font-weight: 650 }
+.hw.done > div { opacity: .5; text-decoration: line-through }
+.hwcheck { width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--muted); background: none; flex: none; display: grid; place-items: center; padding: 0; color: var(--on-accent) }
+.hw.done .hwcheck { background: var(--good); border-color: var(--good) }
+.hwcheck svg { width: 15px; height: 15px }
+.chgday { display: flex; flex-direction: column; gap: 4px }
+.sgrid { display: grid; grid-template-columns: 44px repeat(var(--n), minmax(0, 1fr)); gap: 4px; align-items: stretch }
+.sgh { text-align: center; font-size: 12px; color: var(--muted); padding: 4px 0; border-radius: 8px }
+.sgh b { color: var(--fg) }
+.sgh.now { background: color-mix(in srgb, var(--accent) 18%, transparent) }
+.sgt { font-size: 11px; color: var(--faint); font-variant-numeric: tabular-nums; padding-top: 8px; text-align: right; padding-right: 4px }
+.sgc { display: flex; flex-direction: column; gap: 2px; min-height: 38px }
+.sgl { --c: var(--school); flex: 1; border: 0; border-radius: 8px; background: color-mix(in srgb, var(--c) 20%, var(--surface2)); color: var(--fg); padding: 4px 2px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 0 }
+.sgl b { font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100% }
+.sgl span { font-size: 10px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100% }
+.sgl.chg { --c: var(--warn) } .sgl.cancel { --c: var(--bad) } .sgl.cancel b { text-decoration: line-through }
+.news { border-left: 4px solid var(--school) }

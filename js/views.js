@@ -78,11 +78,12 @@ function latestCard(a) {
 
 /* ---------- Analyse-Übersicht (iPhone-Tab) ---------- */
 function vAnalyse() {
-  let h = header('Analyse');
+  let h = header('Mehr');
   const wf = weekStart(TODAY), wt = addDays(wf, 7);
   h += `<div class="card"><h3>Disziplinen</h3><div class="tiles">${SPORTS.map(s => { const t = totals(s, wf, wt); return tile(NAME[s], de(t.dist / 1000, s === 'swim' ? 2 : 1), 'km', `diese Woche · ${t.n}× · ${hm(t.dur)}`, C[s], s, 'nav:' + s); }).join('')}</div></div>`;
   const w = WELL[WELL.length - 1];
-  h += `<div class="card"><h3>Werkzeuge</h3><div class="tiles">${tile('Fortschritt', weekRings(wf).filter(r => r.k !== 'hours' && r.v >= r.g).length + '/4', 'Ziele', 'Ringe, Bestleistungen, VO2 Max', 'var(--good)', 'rings', 'nav:progress')}${tile('Wettkampf', ACTS.length ? dur(racePredict(SET.cda || .3, SET.wetsuit).total) : '–', '', 'Prognose, Taper, Fueling', 'var(--accent)', 'flag', 'nav:race')}${tile('Schlaf & Stress', w?.sleep ? hm(w.sleep.total) : '–', '', w ? `HRV ${num(w.hrv) ? Math.round(w.hrv) + ' ms' : '–'}` : 'keine Daten', 'var(--sleep)', 'moon', 'nav:wellness')}${tile('Live-Puls', BLE.st.connected ? (BLE.st.hr ?? '…') : 'Bluetooth', BLE.st.connected ? 'bpm' : '', 'Uhr als Pulsgurt', 'var(--bad)', 'heart', 'nav:pulse')}${tile('Karte', ACTS.filter(a => a.samples?.some(x => x.lat)).length, 'Strecken', 'alle GPS-Spuren', 'var(--fit)', 'map', 'nav:map')}</div></div>`;
+  h += `<div class="card"><h3>Werkzeuge</h3><div class="tiles">${tile('Schule', schoolOn() ? hwOpen().length : '–', schoolOn() ? 'Hausaufg.' : '', schoolOn() ? 'Stundenplan, Prüfungen' : 'WebUntis verbinden', 'var(--school)', 'school', 'nav:school')}${tile('Fortschritt', weekRings(wf).filter(r => r.k !== 'hours' && r.v >= r.g).length + '/4', 'Ziele', 'Ringe, Bestleistungen, VO2 Max', 'var(--good)', 'rings', 'nav:progress')}${tile('Wettkampf', ACTS.length ? dur(racePredict(SET.cda || .3, SET.wetsuit).total) : '–', '', 'Prognose, Taper, Fueling', 'var(--accent)', 'flag', 'nav:race')}${tile('Schlaf & Stress', w?.sleep ? hm(w.sleep.total) : '–', '', w ? `HRV ${num(w.hrv) ? Math.round(w.hrv) + ' ms' : '–'}` : 'keine Daten', 'var(--sleep)', 'moon', 'nav:wellness')}${tile('Live-Puls', BLE.st.connected ? (BLE.st.hr ?? '…') : 'Bluetooth', BLE.st.connected ? 'bpm' : '', 'Uhr als Pulsgurt', 'var(--bad)', 'heart', 'nav:pulse')}${tile('Karte', ACTS.filter(a => a.samples?.some(x => x.lat)).length, 'Strecken', 'alle GPS-Spuren', 'var(--fit)', 'map', 'nav:map')}</div></div>`;
+  h += `<div class="card"><button class="act" data-act="nav:settings"><span class="sport" style="--c:var(--muted)">${ICON.gear}</span><span class="mid"><b>Einstellungen</b><span>Uhr, TrainingPeaks, Schule, Design, Profil, Updates</span></span><span class="end">›</span></button></div>`;
   return h;
 }
 

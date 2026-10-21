@@ -1,28 +1,28 @@
 'use strict';
 /* TriCoach – App-Steuerung: Navigation, Ereignisse, Service Worker, Auto-Sync */
 
-const S = { view: 'dashboard', back: null, period: 'week', metric: 'hr', day: sod(new Date()), intSel: null, curveDays: 90, act: null, live: null, speed: 1, mapSport: 'all', mapDays: 90, confirmWipe: false, sheet: null, calQ: '', calSearch: false, calFilter: false };
+const S = { view: 'today', todayOff: null, schoolWeek: 0, back: null, period: 'week', metric: 'hr', day: sod(new Date()), intSel: null, curveDays: 90, act: null, live: null, speed: 1, mapSport: 'all', mapDays: 90, confirmWipe: false, sheet: null, calQ: '', calSearch: false, calFilter: false };
 let DEFERRED_INSTALL = null, WAITING_SW = null;
 
 const NAV = [
-  ['Übersicht', [['dashboard', 'Dashboard', 'dash'], ['calendar', 'Kalender', 'cal'], ['progress', 'Fortschritt', 'rings']]],
+  ['Übersicht', [['today', 'Mein Tag', 'sun'], ['dashboard', 'Training', 'dash'], ['calendar', 'Kalender', 'cal'], ['progress', 'Fortschritt', 'rings'], ['school', 'Schule', 'school']]],
   ['Disziplinen', [['swim', 'Schwimmen', 'swim'], ['bike', 'Radfahren', 'bike'], ['run', 'Laufen', 'run']]],
   ['Werkzeuge', [['race', 'Wettkampf', 'flag'], ['wellness', 'Schlaf & Stress', 'moon'], ['pulse', 'Live-Puls', 'heart'], ['map', 'Karte', 'map']]],
   ['', [['settings', 'Einstellungen', 'gear']]]
 ];
-const TABS = [['dashboard', 'Start', 'dash'], ['calendar', 'Kalender', 'cal'], ['progress', 'Fortschritt', 'rings'], ['analyse', 'Analyse', 'chart'], ['settings', 'Mehr', 'gear']];
-const NAVCOLOR = { swim: 'var(--swim)', bike: 'var(--bike)', run: 'var(--run)', race: 'var(--accent)', wellness: 'var(--sleep)', pulse: 'var(--bad)', map: 'var(--fit)', progress: 'var(--good)' };
-const VIEWS = { dashboard: vDashboard, calendar: vCalendar, progress: vProgress, analyse: vAnalyse, run: vRun, bike: vBike, swim: vSwim, wellness: vWellness, race: vRace, live: vLive, activity: vActivity, settings: vSettings, pulse: vPulse, map: vMap };
+const TABS = [['today', 'Heute', 'sun'], ['dashboard', 'Training', 'dash'], ['calendar', 'Kalender', 'cal'], ['progress', 'Fortschritt', 'rings'], ['analyse', 'Mehr', 'gear']];
+const NAVCOLOR = { swim: 'var(--swim)', bike: 'var(--bike)', run: 'var(--run)', race: 'var(--accent)', wellness: 'var(--sleep)', pulse: 'var(--bad)', map: 'var(--fit)', progress: 'var(--good)', today: 'var(--form)', school: 'var(--school)' };
+const VIEWS = { today: vToday, school: vSchool, dashboard: vDashboard, calendar: vCalendar, progress: vProgress, analyse: vAnalyse, run: vRun, bike: vBike, swim: vSwim, wellness: vWellness, race: vRace, live: vLive, activity: vActivity, settings: vSettings, pulse: vPulse, map: vMap };
 
 function shell() {
   const cur = S.view === 'activity' ? S.back : S.view === 'live' ? 'race' : S.view;
   document.getElementById('side').innerHTML = `<div class="brand"><i>${ICON.bolt}</i>TriCoach</div>` +
     NAV.map(([h, items]) => `<div class="navgroup">${h ? `<h4>${h}</h4>` : ''}${items.map(([id, l, ic]) => `<button class="navbtn ${cur === id ? 'on' : ''}" data-act="nav:${id}"><span style="color:${NAVCOLOR[id] || 'var(--fg)'}">${ICON[ic]}</span>${l}</button>`).join('')}</div>`).join('') +
     `<div class="note">Version ${APP_VERSION}${SET.source === 'icu' && SET.lastSync ? `<br>Sync: ${time(new Date(SET.lastSync))}` : ''}</div>`;
-  const tabCur = ['swim', 'bike', 'run', 'wellness', 'analyse', 'pulse', 'map', 'race'].includes(cur) ? 'analyse' : cur;
+  const tabCur = ['swim', 'bike', 'run', 'wellness', 'analyse', 'pulse', 'map', 'race', 'school', 'settings'].includes(cur) ? 'analyse' : cur;
   document.getElementById('tabbar').innerHTML = TABS.map(([id, l, ic]) => `<button class="${tabCur === id ? 'on' : ''}" data-act="nav:${id}">${ICON[ic]}<span>${l}</span></button>`).join('');
 }
-const SHEETS = { plan: planSheet, log: logSheet, tp: tpSheet, tprace: tpRaceSheet, add: addMenuSheet, goals: goalsSheet };
+const SHEETS = { lesson: lessonSheet, hw: hwSheet, plan: planSheet, log: logSheet, tp: tpSheet, tprace: tpRaceSheet, add: addMenuSheet, goals: goalsSheet };
 function render() {
   shell();
   const c = document.getElementById('content');
@@ -101,7 +101,6 @@ document.addEventListener('click', async e => {
     case 'plan2log': planToLog(); break;
     case 'log': openLog(+v, S.view === 'swim' ? 'swim' : undefined); break;
     case 'lsport': readLogForm(); S.sheet.d.sport = v; S.sheet.d.art = ''; if (!hasDist(v)) S.sheet.d.dist = null; renderSheet(); break;
-    case 'lkm': readLogForm(); S.sheet.d.dist = Math.round(+v * 1000); S.sheet.d.lanes = null; renderSheet(); break;
     case 'lexadd': readLogForm(); S.sheet.d.ex.push({ n: '', s: 3, r: '10', w: null }); renderSheet(); setTimeout(() => document.querySelector(`[name="ex-n${S.sheet.d.ex.length - 1}"]`)?.focus(), 30); break;
     case 'lexdel': readLogForm(); S.sheet.d.ex.splice(+v, 1); renderSheet(); break;
     case 'editact': openLogEdit(v); break;
@@ -114,6 +113,18 @@ document.addEventListener('click', async e => {
     case 'tp-rcopy': if (await copyText(raceSummary(S.sheet.p))) toast('Kopiert – jetzt TrainingPeaks öffnen'); break;
     case 'tp-rdone': { const m = masterOf(S.sheet.p.id); if (m) { m.tp = !m.tp; savePlan(); toast(m.tp ? 'Als „in TrainingPeaks“ markiert' : 'Markierung entfernt'); } S.sheet = null; render(); break; }
     case 'goals': S.sheet = { t: 'goals' }; render(); break;
+    case 'todayoff': S.todayOff = +v; render(); break;
+    case 'lesson': S.sheet = { t: 'lesson', k: v }; render(); break;
+    case 'hwadd': S.sheet = { t: 'hw', d: { su: '', text: '', due: isoDay(addDays(TODAY, 1)) } }; render(); setTimeout(() => document.querySelector('[name="h-text"]')?.focus(), 50); break;
+    case 'hwtoggle': { const h = hwList().find(x => x.key === v); if (h) { SCH.done[v] = !h.isDone; saveSch(); render(); } break; }
+    case 'hwdel': SCH.own = SCH.own.filter(h => h.id !== v); delete SCH.done[v]; saveSch(); render(); break;
+    case 'hwics': hwIcs(); break;
+    case 'exics': examIcs(); break;
+    case 'schoolsync': syncSchool(true); break;
+    case 'schoolweek': S.schoolWeek = (S.schoolWeek || 0) + +v; render(); break;
+    case 'skgen': { const i = document.getElementById('sk'); if (i) { i.value = newSchoolKey(); i.select(); } break; }
+    case 'skcopy': { const i = document.getElementById('sk'); if (i?.value && await copyText(i.value)) toast('Schlüssel kopiert – als GitHub-Secret TRICOACH_KEY einfügen'); break; }
+    case 'schooloff': SCH.data = null; SCH.err = ''; saveSch(); render(); toast('Stundenplan auf diesem Gerät entfernt'); break;
     case 'notify': if (window.Notification) { const r = await Notification.requestPermission(); toast(r === 'granted' ? 'Mitteilungen erlaubt' : 'Mitteilungen nicht erlaubt'); render(); } else toast('Mitteilungen gehen auf dem iPhone nur, wenn TriCoach auf dem Home-Bildschirm installiert ist.'); break;
     case 'accept': { const r = recommendations()[+v]; if (r?.w) { PLAN.push({ id: 'p' + Date.now(), kind: 'workout', date: r.w.date, sport: r.w.sport, title: r.w.title, min: r.w.min }); savePlan(); el.outerHTML = '<span class="cap good">✓ Im Kalender eingetragen</span>'; } break; }
     case 'applyftp': P.ftp = +v; saveSettings(); recompute(); toast(`FTP auf ${v} W gesetzt`); render(); break;
@@ -164,6 +175,8 @@ document.addEventListener('submit', async e => {
   if (id === 'planform') savePlanSheet(e.submitter?.value || 'all');
   else if (id === 'logform') await saveLog();
   else if (id === 'goalform') saveGoals();
+  else if (id === 'hwform') saveHw();
+  else if (id === 'schoolkey') { SCH.key = document.getElementById('sk').value.trim(); saveSch(); toast(SCH.key ? 'Schlüssel gespeichert' : 'Schlüssel entfernt'); if (SCH.key) syncSchool(true); else render(); }
   else await handleSettingsSubmit(id);
 });
 let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(render, 150); });
@@ -199,8 +212,10 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
 
 /* ---------- Auto-Sync: beim Öffnen, beim Zurückkehren und alle 5 Minuten ---------- */
 function autoSync() { if (SET.source === 'icu' && (!SET.lastSync || Date.now() - SET.lastSync > 3 * 60000)) runSync(false); }
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { recompute(); autoSync(); checkForUpdate(false); checkAlarms(); if (!S.sheet) render(); } });
-setInterval(() => { if (document.visibilityState === 'visible') { autoSync(); checkAlarms(); } }, 60000);
+let lastSchool = 0;
+const schoolTick = () => { if (SCH.key && Date.now() - lastSchool > 10 * 60000) { lastSchool = Date.now(); syncSchool(false); } };
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { recompute(); autoSync(); checkForUpdate(false); checkAlarms(); schoolTick(); if (!S.sheet) render(); } });
+setInterval(() => { if (document.visibilityState === 'visible') { autoSync(); checkAlarms(); schoolTick(); } }, 60000);
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && S.sheet) closeSheet(); });
 window.addEventListener('online', autoSync);
 
@@ -213,6 +228,6 @@ window.addEventListener('online', autoSync);
   if (hash === 'log') S.sheet = { t: 'log', id: null, d: newLog(at(TODAY, Math.max(6, NOW.getHours() - 1))) };   // Kurzbefehl/Siri: „TriCoach eintragen“
   if (hash === 'new') S.sheet = { t: 'add' };
   render();
-  autoSync(); checkAlarms();
+  autoSync(); checkAlarms(); schoolTick();
   if (SET.tpIcal && (!SET.tpIcalAt || Date.now() - SET.tpIcalAt > 6 * 3600000)) fetchTpIcal(false);
 })();

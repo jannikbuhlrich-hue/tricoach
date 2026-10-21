@@ -1,9 +1,8 @@
 'use strict';
 /* TriCoach – Einheiten eintragen und bearbeiten:
-   Schwimmen (km oder Bahnen × Becken), Rad, Laufen, Athletik (Schwerpunkt + Übungen), Sonstiges (z. B. Kitesurfen).
+   Schwimmen (km oder Bahnen × Becken), Rad, Laufen, Athletik (Übungen mit Sätzen, Wdh, kg), Sonstiges (z. B. Kitesurfen).
    Uhr-Einheiten lassen sich korrigieren (z. B. geschwommene km) – die Korrektur bleibt auch nach jedem Sync erhalten. */
 
-const SWIM_QUICK = [1, 1.5, 2, 2.5, 3, 3.8];
 const RPE_TXT = ['', 'sehr leicht', 'leicht', 'leicht', 'moderat', 'moderat', 'etwas hart', 'hart', 'sehr hart', 'extrem hart', 'maximal'];
 
 function newLog(date, sport = 'swim', fromPlan) {
@@ -25,16 +24,14 @@ function logSheet() {
   if (!w) b += `<div class="sportpick">${ALL.map(x => `<button type="button" class="${sp === x ? 'on' : ''}" style="--c:${C[x]}" data-act="lsport:${x}">${sicon(x)}<span>${NAME[x]}</span></button>`).join('')}</div>`;
   else b += `<div class="ins"><span class="dot" style="background:${C[sp]}"></span><div><b>Einheit von deiner Uhr</b><span>Messdaten bleiben unverändert. Was du hier korrigierst, bleibt auch nach jedem Sync erhalten.</span></div></div>`;
   const rows = [`<input name="l-name" class="big" placeholder="${logTitle(d)}" value="${esc(d.name)}" autocomplete="off">`];
-  if (sp === 'strength') rows.push(frow('Schwerpunkt', `<select name="l-art">${opts([['', '–'], ...STR_FOCUS.map(x => [x, x])], d.art)}</select>`));
   if (sp === 'other') rows.push(frow('Art', `<input name="l-art" list="othertypes2" value="${esc(d.art)}" placeholder="z. B. Kitesurfen"><datalist id="othertypes2">${OTHER_TYPES.map(x => `<option value="${x}">`).join('')}</datalist>`));
   b += fg(rows);
   if (!w) b += fg([frow('Datum', `<span class="pair"><input type="date" name="l-date" value="${isoDay(d.start)}" max="${isoDay(addDays(TODAY, 1))}"><input type="time" name="l-time" value="${time(d.start)}"></span>`),
     frow('Dauer (h:mm)', `<input name="l-dur" inputmode="numeric" value="${minTxt(Math.round(d.dur / 60))}" placeholder="1:00" required>`)]);
   if (hasDist(sp)) {
     const kmVal = d.dist ? +(d.dist / 1000).toFixed(sp === 'swim' ? 2 : 1) : '';
-    const dr = [frow(sp === 'swim' ? 'Geschwommen (km)' : 'Distanz (km)', `<input name="l-dist" type="number" inputmode="decimal" step="${sp === 'swim' ? '0.05' : '0.1'}" min="0" max="${sp === 'bike' ? 500 : 100}" value="${kmVal}" placeholder="${sp === 'swim' ? 'z. B. 2,5' : ''}" data-input="lpace">`)];
+    const dr = [frow(sp === 'swim' ? 'Geschwommen (km)' : 'Distanz (km)', `<input name="l-dist" type="number" inputmode="decimal" step="${sp === 'swim' ? '0.05' : '0.1'}" min="0" max="${sp === 'bike' ? 500 : 100}" value="${kmVal}" placeholder="${sp === 'swim' ? 'z. B. 1,8' : 'z. B. 42,5'}" data-input="lpace">`)];
     if (sp === 'swim') {
-      dr.push(`<div class="quick">${SWIM_QUICK.map(k => `<button type="button" class="${d.dist === k * 1000 ? 'on' : ''}" data-act="lkm:${k}">${de(k, k % 1 ? 1 : 0)} km</button>`).join('')}</div>`);
       dr.push(frow('oder Bahnen', `<span class="pair"><input name="l-lanes" type="number" inputmode="numeric" min="1" max="400" placeholder="Anzahl" value="${d.lanes || ''}" data-input="llanes"><select name="l-pool" data-input="llanes">${opts([[25, '× 25 m'], [50, '× 50 m'], [33.33, '× 33⅓ m'], [20, '× 20 m']], d.pool)}</select></span>`));
     }
     dr.push(`<div class="cap" id="lpace">${paceHint(sp, d.dist, d.dur)}</div>`);
@@ -42,8 +39,8 @@ function logSheet() {
   }
   if (sp === 'strength') {
     b += `<div class="fgroup"><div class="frow"><span>Übungen <em class="cap">optional</em></span><button type="button" class="linkbtn" data-act="lexadd">${icon('plus', 14)} Übung</button></div>
-      ${d.ex.length ? `<div class="extable"><span class="cap">Übung</span><span class="cap">Sätze</span><span class="cap">Wdh/Zeit</span><span class="cap">kg</span><span></span>${d.ex.map((x, i) => `<input name="ex-n${i}" value="${esc(x.n)}" placeholder="z. B. Kniebeuge" list="exlist"><input name="ex-s${i}" type="number" inputmode="numeric" min="1" max="20" value="${x.s ?? ''}"><input name="ex-r${i}" value="${esc(x.r ?? '')}" placeholder="10 / 45s"><input name="ex-w${i}" type="number" inputmode="decimal" step="0.5" min="0" value="${x.w ?? ''}"><button type="button" class="xbtn" data-act="lexdel:${i}" aria-label="Übung entfernen">×</button>`).join('')}</div>
-      <datalist id="exlist">${['Kniebeuge', 'Kreuzheben', 'Ausfallschritte', 'Bulgarian Split Squat', 'Wadenheben', 'Hip Thrust', 'Klimmzüge', 'Rudern', 'Liegestütze', 'Schulterdrücken', 'Plank', 'Seitstütz', 'Dead Bug', 'Russian Twist', 'Box Jumps', 'Step-ups', 'Theraband Außenrotation', 'Copenhagen Plank'].map(x => `<option value="${x}">`).join('')}</datalist>` : '<span class="cap">Z. B. Kniebeuge 3 × 10 mit 40 kg, Plank 3 × 45 s.</span>'}</div>`;
+      ${d.ex.length ? `<div class="extable"><span class="cap">Übung</span><span class="cap">Sätze</span><span class="cap">Wdh/Zeit</span><span class="cap">kg</span><span></span>${d.ex.map((x, i) => `<input name="ex-n${i}" value="${esc(x.n)}" placeholder="z. B. Kniebeuge"><input name="ex-s${i}" type="number" inputmode="numeric" min="1" max="20" value="${x.s ?? ''}"><input name="ex-r${i}" value="${esc(x.r ?? '')}" placeholder="10 / 45s"><input name="ex-w${i}" type="number" inputmode="decimal" step="0.5" min="0" value="${x.w ?? ''}"><button type="button" class="xbtn" data-act="lexdel:${i}" aria-label="Übung entfernen">×</button>`).join('')}</div>
+` : '<span class="cap">Z. B. Kniebeuge 3 × 10 mit 40 kg, Plank 3 × 45 s.</span>'}</div>`;
   }
   b += fg([`<div class="frow"><span>Anstrengung (RPE)</span><b id="rpev">${d.rpe ? `${d.rpe} · ${RPE_TXT[d.rpe]}` : '–'}</b></div><input type="range" name="l-rpe" min="1" max="10" step="1" value="${d.rpe || 5}" data-input="rpe">`,
     !w ? frow('Ø Herzfrequenz', `<input name="l-hr" type="number" inputmode="numeric" min="40" max="220" placeholder="optional" value="${d.avgHr ? Math.round(d.avgHr) : ''}">`) : '',
@@ -53,7 +50,7 @@ function logSheet() {
   if (s.id && !w) b += `<button type="button" class="btn danger" data-act="delact:${s.id}">Einheit löschen</button>`;
   return sheetWrap(s.id ? 'Einheit bearbeiten' : 'Einheit eintragen', b, 'logform');
 }
-const logTitle = d => d.sport === 'strength' ? `Athletik${d.art ? ' · ' + d.art : ''}` : d.sport === 'other' ? (d.art || 'Training') : { swim: 'Schwimmen', bike: 'Radfahrt', run: 'Lauf' }[d.sport];
+const logTitle = d => d.sport === 'strength' ? 'Athletik' : d.sport === 'other' ? (d.art || 'Training') : { swim: 'Schwimmen', bike: 'Radfahrt', run: 'Lauf' }[d.sport];
 function paceHint(sp, dist, dur) {
   if (!dist || !dur) return '';
   const v = dist / dur;
