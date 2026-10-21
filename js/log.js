@@ -6,15 +6,17 @@
 const RPE_TXT = ['', 'sehr leicht', 'leicht', 'leicht', 'moderat', 'moderat', 'etwas hart', 'hart', 'sehr hart', 'extrem hart', 'maximal'];
 
 function newLog(date, sport = 'swim', fromPlan) {
-  const d = { sport, art: '', name: '', start: new Date(date), dur: 3600, dist: null, rpe: 5, avgHr: null, kcal: null, notes: '', ex: [], toTp: true, pool: 25, lanes: null };
+  const d = { sport, art: '', name: '', start: new Date(date), dur: 3600, dist: null, rpe: 5, avgHr: null, kcal: null, notes: '', ex: [], toTp: true, where: lastWhere(), lanes: null };
   if (fromPlan) Object.assign(d, { sport: fromPlan.sport || 'other', art: fromPlan.art || '', name: fromPlan.title, start: new Date(fromPlan.date), dur: (fromPlan.min || 60) * 60, dist: fromPlan.dist || null, notes: fromPlan.notes || '' });
   return d;
 }
+/* Standard: wo du zuletzt geschwommen bist */
+function lastWhere() { const a = ACTS.find(x => x.sport === 'swim' && swimWhere(x)); return a ? swimWhere(a) : 25; }
 function openLog(date, sport) { S.sheet = { t: 'log', id: null, d: newLog(date, sport) }; render(); }
 function openLogEdit(id) {
   const a = byId(id); if (!a) return;
   const manual = a.source === 'manual';
-  S.sheet = { t: 'log', id, watch: !manual, d: { sport: a.sport, art: a.art || '', name: a.name, start: new Date(a.start), dur: a.dur, dist: a.dist || null, rpe: a.rpe ?? (manual ? 5 : null), avgHr: a.avgHr ?? null, kcal: a.kcal ?? null, notes: a.notes || '', ex: (a.ex || []).map(x => ({ ...x })), toTp: false, pool: a.pool || 25, lanes: null } };
+  S.sheet = { t: 'log', id, watch: !manual, d: { sport: a.sport, art: a.art || '', name: a.name, start: new Date(a.start), dur: a.dur, dist: a.dist || null, rpe: a.rpe ?? (manual ? 5 : null), avgHr: a.avgHr ?? null, kcal: a.kcal ?? null, notes: a.notes || '', ex: (a.ex || []).map(x => ({ ...x })), toTp: false, where: swimWhere(a) || 25, lanes: null } };
   render();
 }
 
@@ -28,11 +30,12 @@ function logSheet() {
   b += fg(rows);
   if (!w) b += fg([frow('Datum', `<span class="pair"><input type="date" name="l-date" value="${isoDay(d.start)}" max="${isoDay(addDays(TODAY, 1))}"><input type="time" name="l-time" value="${time(d.start)}"></span>`),
     frow('Dauer (h:mm)', `<input name="l-dur" inputmode="numeric" value="${minTxt(Math.round(d.dur / 60))}" placeholder="1:00" required>`)]);
+  if (sp === 'swim') b += `<div class="fgroup"><div class="frow"><span>Wo geschwommen?</span></div><div class="seg fill">${[[25, '25-m-Bahn'], [50, '50-m-Bahn'], ['ow', 'Freiwasser']].map(([k, l]) => `<button type="button" class="${d.where === k ? 'on' : ''}" data-act="lwhere:${k}">${l}</button>`).join('')}</div>${w ? '<span class="cap">Von der Uhr erkannt – hier korrigierbar.</span>' : ''}</div>`;
   if (hasDist(sp)) {
     const kmVal = d.dist ? +(d.dist / 1000).toFixed(sp === 'swim' ? 2 : 1) : '';
     const dr = [frow(sp === 'swim' ? 'Geschwommen (km)' : 'Distanz (km)', `<input name="l-dist" type="number" inputmode="decimal" step="${sp === 'swim' ? '0.05' : '0.1'}" min="0" max="${sp === 'bike' ? 500 : 100}" value="${kmVal}" placeholder="${sp === 'swim' ? 'z. B. 1,8' : 'z. B. 42,5'}" data-input="lpace">`)];
-    if (sp === 'swim') {
-      dr.push(frow('oder Bahnen', `<span class="pair"><input name="l-lanes" type="number" inputmode="numeric" min="1" max="400" placeholder="Anzahl" value="${d.lanes || ''}" data-input="llanes"><select name="l-pool" data-input="llanes">${opts([[25, '× 25 m'], [50, '× 50 m'], [33.33, '× 33⅓ m'], [20, '× 20 m']], d.pool)}</select></span>`));
+    if (sp === 'swim' && d.where !== 'ow') {
+      dr.push(frow(`oder Bahnen <em class="cap">à ${d.where} m</em>`, `<input name="l-lanes" type="number" inputmode="numeric" min="1" max="400" placeholder="Anzahl" value="${d.lanes || ''}" data-input="llanes">`));
     }
     dr.push(`<div class="cap" id="lpace">${paceHint(sp, d.dist, d.dur)}</div>`);
     b += fg(dr);
@@ -64,7 +67,7 @@ function readLogForm() {
   if (g('l-date')) { const [Y, M, D] = v('l-date').split('-').map(Number), [hh, mm] = (v('l-time') || '12:00').split(':').map(Number); if (Y) d.start = new Date(Y, M - 1, D, hh || 0, mm || 0); }
   if (g('l-dur')) { const m = durMin(v('l-dur')); if (m > 0) d.dur = Math.round(m * 60); }
   if (g('l-dist')) { const x = parseFloat(v('l-dist').replace(',', '.')); d.dist = x > 0 ? Math.round(x * 1000) : null; }
-  if (g('l-lanes')) { d.lanes = +v('l-lanes') || null; d.pool = +v('l-pool') || 25; }
+  if (g('l-lanes')) d.lanes = +v('l-lanes') || null;
   if (g('l-rpe')) d.rpe = +v('l-rpe');
   if (g('l-hr')) d.avgHr = +v('l-hr') || null;
   if (g('l-kcal')) d.kcal = +v('l-kcal') || null;
@@ -83,6 +86,7 @@ async function saveLog() {
     const set = (k, val, orig) => { if (val === orig || (val == null && orig == null) || val === '') delete e[k]; else e[k] = val; };
     set('name', d.name || a._orig?.name || a.name, a._orig?.name ?? a.name);
     if (hasDist(a.sport)) set('dist', d.dist, a._orig?.dist ?? a.dist);
+    if (a.sport === 'swim') { const auto = a.swim ? (a.swim.ow ? 'ow' : Math.round(a.swim.pool || 25)) : null; if (d.where === auto) delete e.where; else e.where = d.where; }
     set('rpe', d.rpe, null); set('notes', d.notes || undefined, undefined);
     if (a.sport === 'other' && d.art) e.art = d.art;
     EDITS[s.id] = e; saveEdits(); recompute(); S.sheet = null; render(); toast('Änderungen gesichert'); return;
@@ -91,7 +95,7 @@ async function saveLog() {
   const a = {
     id: s.id || 'man-' + Date.now().toString(36), source: 'manual', sport: d.sport, art: d.art || undefined, name: d.name || logTitle(d),
     start: d.start, dur: d.dur, dist: hasDist(d.sport) ? (d.dist || 0) : 0, rpe: d.rpe, avgHr: d.avgHr, maxHr: null, kcal: d.kcal || estKcal(d.sport, d.dur, d.rpe),
-    notes: d.notes, ex: d.sport === 'strength' ? d.ex.filter(x => x.n) : undefined, pool: d.sport === 'swim' && d.lanes ? d.pool : undefined, tp: old?.tp || null, samples: [], laps: []
+    notes: d.notes, ex: d.sport === 'strength' ? d.ex.filter(x => x.n) : undefined, where: d.sport === 'swim' ? d.where : undefined, tp: old?.tp || null, samples: [], laps: []
   };
   a.tss = tss(a);
   try { await DB.put('acts', [a]); } catch (e) { toast('Speichern fehlgeschlagen: ' + e.message); return; }
@@ -115,7 +119,7 @@ document.addEventListener('input', e => {
   const f = document.getElementById('logform');
   if (k === 'rpe') { const v = +e.target.value; S.sheet.d.rpe = v; const o = document.getElementById('rpev'); if (o) o.textContent = `${v} · ${RPE_TXT[v]}`; }
   if (k === 'llanes' && f) {
-    const n = +f.elements['l-lanes'].value, pool = +f.elements['l-pool'].value;
+    const n = +f.elements['l-lanes'].value, pool = +S.sheet.d.where || 25;
     if (n > 0) f.elements['l-dist'].value = +(n * pool / 1000).toFixed(2);
   }
   if ((k === 'lpace' || k === 'llanes') && f) {

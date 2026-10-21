@@ -7,7 +7,7 @@
    3. Übergabe: Zusammenfassung kopieren, TrainingPeaks öffnen, einfügen (z. B. für Wettkampf-Events). */
 
 const TP_URL = 'https://app.trainingpeaks.com/';
-const TP_EVENT = { sprint: 'Triathlon', olympic: 'Triathlon', middle: 'Triathlon', full: 'Triathlon', r5: 'Run', r10: 'Run', rhm: 'Run', rm: 'Run', duath: 'Duathlon', bike: 'Road Bike', swim: 'Open Water Swim', other: 'Other' };
+const TP_EVENT = { sprint: 'Triathlon', volks: 'Triathlon', olympic: 'Triathlon', middle: 'Triathlon', full: 'Triathlon', r5: 'Run', r10: 'Run', rhm: 'Run', rm: 'Run', duath: 'Duathlon', bike: 'Road Bike', swim: 'Open Water Swim', other: 'Other' };
 /* Workout-Typ für Apple Health (so heißen die Typen im Kurzbefehl „Training protokollieren“) */
 const HEALTH_TYPE = { swim: 'Schwimmen', bike: 'Radfahren', run: 'Laufen', strength: 'Funktionelles Krafttraining' };
 const healthType = a => HEALTH_TYPE[a.sport] || ({ Kitesurfen: 'Wassersport', Windsurfen: 'Wassersport', Surfen: 'Surfen', SUP: 'Paddelsport', Wandern: 'Wandern', Yoga: 'Yoga', Rudern: 'Rudern', Klettern: 'Klettern' }[a.art] || 'Andere');
@@ -17,7 +17,7 @@ function healthPayload(a) {
   return {
     typ: healthType(a), sport: a.sport, name: a.name,
     start: `${isoDay(a.start)} ${time(a.start)}`,
-    dauer_min: Math.round(a.dur / 60), distanz_km: a.dist ? +(a.dist / 1000).toFixed(2) : 0,
+    dauer_min: Math.round(a.dur / 60), ort: swimWhere(a) === 'ow' ? 'Freiwasser' : swimWhere(a) ? 'Becken' : '', bahn_m: typeof swimWhere(a) === 'number' ? swimWhere(a) : 0, distanz_km: a.dist ? +(a.dist / 1000).toFixed(2) : 0,
     distanz_m: Math.round(a.dist || 0), kcal: a.kcal || estKcal(a.sport, a.dur, a.rpe), rpe: a.rpe || null, notiz: a.notes || ''
   };
 }
@@ -38,7 +38,7 @@ function markTp(id, how) {
 /* ---------- 2. FIT-Datei (Garmin-Format, das TrainingPeaks, Garmin Connect, Strava und intervals.icu lesen) ---------- */
 const FIT_SPORT = { swim: [5, 0], bike: [2, 0], run: [1, 0], strength: [10, 20] };
 const FIT_OTHER = { Kitesurfen: [44, 0], Windsurfen: [43, 0], Surfen: [38, 0], SUP: [37, 0], Wandern: [17, 0], Rudern: [15, 0], Yoga: [10, 43], Ski: [13, 0], Spaziergang: [11, 0], Klettern: [31, 0] };
-const fitSport = a => FIT_SPORT[a.sport] || FIT_OTHER[a.art] || [0, 0];
+const fitSport = a => a.sport === 'swim' ? [5, swimWhere(a) === 'ow' ? 18 : swimWhere(a) ? 17 : 0] : FIT_SPORT[a.sport] || FIT_OTHER[a.art] || [0, 0];
 const CRC_T = [0x0000, 0xCC01, 0xD801, 0x1400, 0xF001, 0x3C00, 0x2800, 0xE401, 0xA001, 0x6C00, 0x7800, 0xB401, 0x5000, 0x9C01, 0x8801, 0x4400];
 function fitCrc(bytes, crc = 0) {
   for (const b of bytes) {
@@ -72,7 +72,8 @@ function buildFit(a) {
   msg(21, [[253, 'u32'], [0, 'enum'], [1, 'enum']], [[t1, 0, 4]]);                                                     // event: Timer Stop
   const sum = [[253, 'u32'], [2, 'u32'], [7, 'u32'], [8, 'u32'], [9, 'u32'], [11, 'u16'], [0, 'enum'], [1, 'enum']];
   msg(19, [...sum, [15, 'u8'], [16, 'u8'], [25, 'enum'], [39, 'enum']], [[t1, t0, dur * 1000, dur * 1000, dist, kcal, 9, 1, hr, mx, sport, sub]]);      // lap
-  msg(18, [...sum, [16, 'u8'], [17, 'u8'], [5, 'enum'], [6, 'enum'], [25, 'u16'], [26, 'u16']], [[t1, t0, dur * 1000, dur * 1000, dist, kcal, 8, 1, hr, mx, sport, sub, 0, 1]]); // session
+  const lane = sport === 5 && typeof swimWhere(a) === 'number' ? swimWhere(a) : null;   // Bahnlänge für Beckenschwimmen
+  msg(18, [...sum, [16, 'u8'], [17, 'u8'], [5, 'enum'], [6, 'enum'], [25, 'u16'], [26, 'u16'], ...(lane ? [[44, 'u16'], [46, 'enum']] : [])], [[t1, t0, dur * 1000, dur * 1000, dist, kcal, 8, 1, hr, mx, sport, sub, 0, 1, ...(lane ? [lane * 100, 0] : [])]]); // session
   msg(34, [[253, 'u32'], [0, 'u32'], [1, 'u16'], [2, 'enum'], [3, 'enum'], [4, 'enum'], [5, 'u32']], [[t1, dur * 1000, 1, 1, 26, 1, t1 + tzOff]]);     // activity
   const hdr = [14, 0x20, ...w16(2132), ...w32(out.length), 0x2E, 0x46, 0x49, 0x54];
   const head = [...hdr, ...w16(fitCrc(hdr))], all = [...head, ...out];
@@ -91,6 +92,7 @@ async function downloadFit(id) {
 /* ---------- 3. Übergabe-Text ---------- */
 function actSummary(a) {
   const L = [`${a.name} – ${NAME[a.sport]}${a.art && !a.name.includes(a.art) ? ' (' + a.art + ')' : ''}`, `${dayTitle(a.start)}, ${time(a.start)} Uhr`, `Dauer: ${dur(a.dur)}${a.dist ? ' · Distanz: ' + distTxt(a.sport, a.dist) : ''}${a.dist && a.dur ? ' · ' + paceHint(a.sport, a.dist, a.dur) : ''}`];
+  if (swimWhere(a)) L.push(`Wo: ${whereTxt(swimWhere(a))}`);
   if (num(a.avgHr)) L.push(`Ø HF ${Math.round(a.avgHr)} bpm`);
   if (a.rpe) L.push(`RPE ${a.rpe}/10 (${RPE_TXT[a.rpe]})`);
   if (a.ex?.length) L.push('Übungen: ' + a.ex.map(x => `${x.n}${x.s ? ' ' + x.s + '×' : ''}${x.r ? x.r : ''}${x.w ? ' @ ' + de(x.w, x.w % 1 ? 1 : 0) + ' kg' : ''}`).join(', '));

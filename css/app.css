@@ -456,3 +456,8 @@ a.btn { text-decoration: none }
 .sgl span { font-size: 10px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100% }
 .sgl.chg { --c: var(--warn) } .sgl.cancel { --c: var(--bad) } .sgl.cancel b { text-decoration: line-through }
 .news { border-left: 4px solid var(--school) }
+
+/* 2.4: Auswahl über die volle Breite (z. B. 25 m / 50 m / Freiwasser) */
+.seg.fill { display: flex; width: 100%; box-sizing: border-box; }
+.seg.fill button { flex: 1; white-space: nowrap; padding-left: 6px; padding-right: 6px; }
+.fgroup > .seg.fill { margin: 0 0 10px; }

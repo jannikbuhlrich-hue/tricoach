@@ -16,7 +16,7 @@ const WD = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
 const ICS_WD = ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'];
 const STR_FOCUS = ['Kraft', 'Stabi & Core', 'Mobility', 'Plyometrie', 'Lauf-ABC', 'Yoga', 'Zirkel'];
 const OTHER_TYPES = ['Kitesurfen', 'Wandern', 'Yoga', 'SUP', 'Rudern', 'Ski', 'Mannschaftssport', 'Spaziergang', 'Klettern'];
-const RACE_FMT = { sprint: 'Triathlon Sprint', olympic: 'Triathlon Olympisch', middle: 'Triathlon 70.3', full: 'Triathlon Langdistanz', r5: 'Lauf 5 km', r10: 'Lauf 10 km', rhm: 'Halbmarathon', rm: 'Marathon', duath: 'Duathlon', bike: 'Radrennen', swim: 'Freiwasserschwimmen', other: 'Sonstiges' };
+const RACE_FMT = { sprint: 'Triathlon Sprint', volks: 'Triathlon Volksdistanz', olympic: 'Triathlon Olympisch', middle: 'Triathlon 70.3', full: 'Triathlon Langdistanz', r5: 'Lauf 5 km', r10: 'Lauf 10 km', rhm: 'Halbmarathon', rm: 'Marathon', duath: 'Duathlon', bike: 'Radrennen', swim: 'Freiwasserschwimmen', other: 'Sonstiges' };
 const COMPL = { good: ['var(--good)', 'Plan erfüllt'], warn: ['var(--warn)', 'teilweise'], orange: ['var(--z5)', 'abweichend'], bad: ['var(--bad)', 'verpasst'] };
 
 const endOf = p => p.allDay ? addDays(sod(p.date), p.days || 1) : new Date(p.date.getTime() + (p.min || 60) * 60000);
@@ -230,7 +230,7 @@ function addMenuSheet() {
 /* ---------- Editor (Bottom-Sheet wie in Apple Kalender) ---------- */
 function newDraft(kind, date) {
   const d = new Date(date);
-  return { kind, sport: kind === 'workout' ? 'run' : undefined, title: '', date: d, allDay: false, min: kind === 'race' ? 150 : 60, days: 1, location: '', notes: '', url: '', alarm: kind === 'race' ? 1440 : null, alarm2: null, rrule: null, prio: 'A', fmt: 'olympic', goal: '', season: false, dist: null, art: '', tp: false };
+  return { kind, sport: kind === 'workout' ? 'run' : undefined, title: '', date: d, allDay: false, min: kind === 'race' ? 90 : 60, days: 1, location: '', notes: '', url: '', alarm: kind === 'race' ? 1440 : null, alarm2: null, rrule: null, prio: 'A', fmt: 'sprint', goal: '', season: false, dist: null, art: '', tp: false };
 }
 function openPlanEditor(r) {
   const [id, occ] = r.split('|');
@@ -262,7 +262,7 @@ function planSheet() {
       hasDist(d.sport) ? frow('Distanz (km)', `<input name="f-dist" type="number" inputmode="decimal" step="${d.sport === 'swim' ? '0.05' : '0.1'}" min="0" value="${d.dist ? +(d.dist / 1000).toFixed(2) : ''}" placeholder="optional">`) : '']);
   }
   if (k === 'race') b += fg([frow('Priorität', `<select name="f-prio">${opts([['A', 'A – Saisonhöhepunkt'], ['B', 'B – wichtig'], ['C', 'C – Trainingswettkampf']], d.prio)}</select>`),
-    frow('Distanz', `<select name="f-fmt">${opts(Object.entries(RACE_FMT), d.fmt)}</select>`), frow('Zielzeit', `<input name="f-goal" placeholder="z. B. 2:25:00" value="${esc(d.goal || '')}" inputmode="numeric">`),
+    frow('Distanz', `<select name="f-fmt">${opts(Object.entries(RACE_FMT), d.fmt)}</select>`), frow('Zielzeit', `<input name="f-goal" placeholder="z. B. 1:10:00" value="${esc(d.goal || '')}" inputmode="numeric">`),
     `<label class="frow"><span>Saisonziel <em class="cap">Prognose, Taper, Countdown</em></span><input type="checkbox" name="f-season" ${d.season ? 'checked' : ''}></label>`]);
   b += fg([`<label class="frow"><span>Ganztägig</span><input type="checkbox" name="f-allday" data-change="sheet" ${d.allDay ? 'checked' : ''}></label>`,
     frow(d.allDay ? 'Datum' : 'Beginn', `<span class="pair"><input type="date" name="f-date" value="${isoDay(d.date)}" required>${d.allDay ? '' : `<input type="time" name="f-time" value="${time(d.date)}">`}</span>`),

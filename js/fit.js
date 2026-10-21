@@ -128,9 +128,9 @@ const FIT = (() => {
         const ls = lengths.filter(l => l.v[2] >= t0 - 1 && l.v[2] <= t1 && (l.v[12] ?? 1) === 1).map((l, i) => {
           const d = (l.v[4] ?? 0) / 1000; return { i, dur: d, strokes: l.v[5] ?? 0, type: STROKE[l.v[7]] || 'mixed', t: date(l.v[2]).getTime() / 1000 - t0 + d };
         });
-        act.lengths = ls; act.swim = { pool: pool || 25 };
+        act.lengths = ls; act.swim = { pool: pool || 25, ow: !pool || sv[6] === 18 };
         if (!samples.some(x => x.v) && ls.length && pool) act.samples = ls.map(l => ({ t: l.t, v: pool / l.dur, cad: l.strokes / l.dur * 60, hr: samples.find(x => x.t >= l.t)?.hr }));
-        if (!pool) act.name = 'Freiwasser';
+        if (act.swim.ow) act.name = 'Freiwasser';
       }
       return finalize(act);
     }).filter(a => a.dur > 60);

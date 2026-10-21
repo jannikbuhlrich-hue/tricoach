@@ -11,13 +11,14 @@ let PLAN = loadPlan();
 function loadSettings() {
   let s = {};
   try { s = JSON.parse(localStorage.getItem('tricoach-settings') || '{}'); } catch (e) { }
-  const race = s.race || { name: 'Saisonhöhepunkt', date: isoDay(addDays(new Date(), 70)), fmt: 'olympic', temp: 20, hills: 0 };
+  const race = s.race || { name: 'Saisonhöhepunkt', date: isoDay(addDays(new Date(), 70)), fmt: 'sprint', temp: 20, hills: 0 };
+  if (!s.sprintV && race.fmt === 'olympic') race.fmt = 'sprint';   // 2.4: Sprint ist jetzt die Standarddistanz
   return {
     profile: { ...DEFAULT_PROFILE, ...(s.profile || {}) },
     race, source: s.source || 'demo', icuKey: s.icuKey || '', design: s.design || 'nacht',
     lastSync: s.lastSync || null, syncDays: s.syncDays || 120, wetsuit: s.wetsuit ?? true, cda: s.cda || null,
     calView: s.calView || 'month', calHidden: s.calHidden || [], showDone: s.showDone ?? true,
-    goals: s.goals || null, yearGoals: s.yearGoals || null, shortcut: s.shortcut || 'TriCoach', tpIcal: s.tpIcal || '', tpIcalAt: s.tpIcalAt || null
+    sprintV: 1, goals: s.goals || null, yearGoals: s.yearGoals || null, shortcut: s.shortcut || 'TriCoach', tpIcal: s.tpIcal || '', tpIcalAt: s.tpIcalAt || null
   };
 }
 function saveSettings() {
@@ -73,7 +74,7 @@ function saveEdits() { try { localStorage.setItem('tricoach-edits', JSON.stringi
 function applyEdit(a) {
   const e = EDITS[a.id]; if (!e) return;
   if (a._orig === undefined) a._orig = { name: a.name, dist: a.dist };
-  for (const k of ['name', 'dist', 'rpe', 'notes', 'tp', 'art']) if (e[k] !== undefined) a[k] = e[k];
+  for (const k of ['name', 'dist', 'rpe', 'notes', 'tp', 'art', 'where']) if (e[k] !== undefined) a[k] = e[k];
 }
 function recompute() {
   NOW = new Date(); TODAY = sod(NOW);
@@ -132,6 +133,7 @@ const ICU = (() => {
       start: new Date(item.start_date_local || item.start_date), dur: item.moving_time || item.elapsed_time || 0, dist: item.distance || 0,
       avgHr: item.average_heartrate ?? null, maxHr: item.max_heartrate ?? null, elev: item.total_elevation_gain ?? null, samples: [], laps: []
     };
+    if (sport === 'swim') a.where = /open/i.test(item.type || '') ? 'ow' : item.pool_length ? Math.round(item.pool_length) : null;
     if (sport === 'bike' && item.icu_weighted_avg_watts) a.bike = { np: item.icu_weighted_avg_watts, ap: item.icu_average_watts };
     return [finalize(a)];
   }

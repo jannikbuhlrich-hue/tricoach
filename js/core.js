@@ -1,7 +1,7 @@
 'use strict';
 /* TriCoach – Basis: Hilfsfunktionen, Formatierung, Grafik-Bausteine */
 
-const APP_VERSION = '2.3.0';
+const APP_VERSION = '2.4.0';
 const DAY = 86400000;
 const DT = 10; // alle Zeitreihen werden auf 10-s-Raster gebracht
 const SPORTS = ['swim', 'bike', 'run'];                       // Triathlon-Disziplinen (Analysen, Prognosen)
@@ -9,6 +9,9 @@ const ALL = ['swim', 'bike', 'run', 'strength', 'other'];      // alles, was im 
 const NAME = { swim: 'Schwimmen', bike: 'Rad', run: 'Laufen', strength: 'Athletik', other: 'Sonstiges' };
 const C = { swim: 'var(--swim)', bike: 'var(--bike)', run: 'var(--run)', strength: 'var(--str)', other: 'var(--oth)' };
 const hasDist = s => s === 'swim' || s === 'bike' || s === 'run';
+/* Wo geschwommen: 25 | 50 (Bahnlänge in m) | 'ow' (Freiwasser) – eingetragen, korrigiert oder von der Uhr erkannt */
+const swimWhere = a => a.sport !== 'swim' ? null : a.where != null ? a.where : a.swim ? (a.swim.ow ? 'ow' : Math.round(a.swim.pool || 25)) : a.pool ? Math.round(a.pool) : null;
+const whereTxt = w => w === 'ow' ? 'Freiwasser' : w ? `${w}-m-Bahn` : '';
 /* Distanzen: Schwimmen in km mit zwei Nachkommastellen (z. B. 2,35 km), sonst km */
 const distTxt = (sport, m) => !m ? '' : sport === 'swim' ? de(m / 1000, m % 1000 ? 2 : 1) + ' km' : km(m, sport === 'bike' ? 0 : 1);
 

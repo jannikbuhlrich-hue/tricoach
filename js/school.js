@@ -172,19 +172,39 @@ function examIcs() {
 
 /* ---------- Einstellungen ---------- */
 function newSchoolKey() { const a = crypto.getRandomValues(new Uint8Array(18)); return btoa(String.fromCharCode(...a)).replace(/[+/=]/g, c => ({ '+': 'x', '/': 'y', '=': '' }[c])); }
+/* Liegen die verschlüsselten Zugangsdaten schon im Repo? (dann braucht GitHub nur das Secret TRICOACH_KEY) */
+async function checkZugang() {
+  if (SCH.zugang != null || SCH.zugangBusy) return;
+  SCH.zugangBusy = true;
+  try { const r = await fetch(schoolUrl().replace('/schule-daten/schule.enc', '/main/tools/untis-zugang.enc') + '?t=' + Date.now(), { cache: 'no-store' }); SCH.zugang = r.ok; }
+  catch (e) { SCH.zugang = false; }
+  SCH.zugangBusy = false; if (S.view === 'settings') render();
+}
+/* Text für das GitHub-Secret UNTIS_ZUGANG aus den Angaben in WebUntis bauen (bleibt nur im Formular, wird nicht gespeichert) */
+function zugangText() {
+  const g = id => (document.getElementById(id)?.value || '').trim();
+  const url = g('z-url').replace(/^https?:\/\//i, '').replace(/\/.*$/, ''), school = g('z-school'), user = g('z-user'), key = g('z-key').replace(/\s+/g, '').toUpperCase();
+  if (!url || !school || !user || !key) return null;
+  return `untis://setschool?url=${encodeURIComponent(url)}&school=${encodeURIComponent(school)}&user=${encodeURIComponent(user)}&key=${encodeURIComponent(key)}${g('z-nr') ? '&schoolNumber=' + encodeURIComponent(g('z-nr')) : ''}`;
+}
 function schoolSettingsCard() {
+  checkZugang();
   const repoUrl = schoolUrl().replace('https://raw.githubusercontent.com/', 'https://github.com/').replace(/\/schule-daten\/schule\.enc$/, '');
+  const hints = SCH.data?.err?.length ? `<div class="ins"><span class="dot" style="background:var(--warn)"></span><div><b>Hinweis vom letzten Abruf</b><span>${SCH.data.err.map(esc).join('<br>')}</span></div></div>` : '';
+  const zOk = SCH.zugang === true;
   return `<div class="card" id="schule"><h3>${icon('school')} Schule (WebUntis) <small>${schoolOn() ? 'verbunden · Stand ' + new Date(SCH.data.at).toLocaleString('de-DE', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'nicht verbunden'}</small></h3>
-    <span class="cap fg">Stundenplan mit Entfall und Vertretung, Infos der Lehrkräfte, Hausaufgaben und Prüfungen. Ein kleiner Job in deinem GitHub-Repo holt alle 30 Minuten (6–22 Uhr) die Daten von WebUntis und verschlüsselt sie – lesen kann sie nur TriCoach mit deinem Schlüssel. Dein WebUntis-Passwort liegt nur als geheimes GitHub-Secret, nie in der App.</span>
-    <div class="opt"><b>1 · Schlüssel</b><form id="schoolkey" class="plan"><label style="grid-column:1/-1">Schlüssel (auf allen deinen Geräten gleich eintragen)<input id="sk" value="${esc(SCH.key)}" autocomplete="off" spellcheck="false"></label><button class="btn" type="button" data-act="skgen">Neu erzeugen</button><button class="btn" type="button" data-act="skcopy">Kopieren</button><button class="btn primary" type="submit">Speichern</button></form></div>
-    <div class="opt"><b>2 · GitHub-Secrets anlegen <span class="tag">einmalig</span></b><ol class="steps">
-      <li><a href="${repoUrl}/settings/secrets/actions" target="_blank" rel="noopener">Repo → Settings → Secrets and variables → Actions</a> → <b>New repository secret</b>.</li>
-      <li><code>TRICOACH_KEY</code> = der Schlüssel von oben.</li>
-      <li><code>UNTIS_SERVER</code> = Server aus deiner WebUntis-Adresse, z. B. <code>neilo.webuntis.com</code>.</li>
-      <li><code>UNTIS_SCHOOL</code> = Schulname aus der Adresse (steht hinter <code>?school=</code> bzw. beim Login unter „Schule“).</li>
-      <li><code>UNTIS_USER</code> und <code>UNTIS_PASSWORD</code> = dein WebUntis-Login.</li>
-      <li><a href="${repoUrl}/actions/workflows/schule.yml" target="_blank" rel="noopener">Actions → „Schule (WebUntis)“</a> → <b>Run workflow</b>. Nach ca. 1 Minute hier auf „Jetzt abrufen“.</li></ol>
-      <span class="cap">Klappt nur mit normalem WebUntis-Login (Benutzer + Passwort). Wenn deine Schule nur „Mit Microsoft/IServ anmelden“ hat, geht's nicht – dann den iCal-Weg unten nutzen. GitHub pausiert geplante Jobs, wenn 60 Tage nichts im Repo passiert; dann einmal „Run workflow“ drücken.</span>
-      <div class="row" style="flex-wrap:wrap"><button class="btn primary" data-act="schoolsync">${icon('sync', 14)} Jetzt abrufen</button>${schoolOn() ? `<button class="btn" data-act="schooloff">Trennen</button>` : ''}</div>${SCH.err ? `<span class="cap warnc">${esc(SCH.err)}</span>` : ''}</div>
-    <div class="opt"><b>Apple Kalender</b><span class="cap fg"><b>Stundenplan:</b> In WebUntis → <b>Profil → Freigaben → „Kalender veröffentlichen“</b> (bzw. in der Untis-App Kalender → Abo) den iCal-Link kopieren, dann am iPhone in der <b>Kalender-App → Kalender → Kalender hinzufügen → Kalenderabo hinzufügen</b> einfügen. Der Stundenplan aktualisiert sich dort selbst, auch bei Änderungen. <b>Hausaufgaben & Prüfungen:</b> in TriCoach unter Schule „In Apple Kalender“ – mit Erinnerung am Vorabend bzw. 2 Tage und 1 Woche vorher.</span></div></div>`;
+    <span class="cap fg">Stundenplan mit Entfall und Vertretung, Infos der Lehrkräfte, Hausaufgaben und Prüfungen. Ein kleiner Job in deinem GitHub-Repo meldet sich alle 30 Minuten (6–22 Uhr) mit deinem <b>WebUntis-App-Schlüssel</b> an – genau wie die Untis-App, also auch an Schulen mit „Mit Microsoft anmelden“ – und legt die Daten verschlüsselt ab. Lesen kann sie nur TriCoach mit deinem Schlüssel.</span>
+    <div class="opt"><b>1 · TriCoach-Schlüssel</b><form id="schoolkey" class="plan"><label style="grid-column:1/-1">Schlüssel (auf allen deinen Geräten gleich eintragen)<input id="sk" value="${esc(SCH.key)}" autocomplete="off" spellcheck="false"></label><button class="btn" type="button" data-act="skgen">Neu erzeugen</button><button class="btn" type="button" data-act="skcopy">Kopieren</button><button class="btn primary" type="submit">Speichern</button></form>
+      <span class="cap">Nicht neu erzeugen, wenn alles schon läuft – sonst passt er nicht mehr zum GitHub-Secret.</span></div>
+    <div class="opt ${zOk ? 'on' : ''}"><b>2 · WebUntis-Zugang ${zOk ? '<span class="tag">✓ liegt verschlüsselt im Repo</span>' : ''}</b>
+      ${zOk ? `<span class="cap fg">Deine Zugangsdaten liegen verschlüsselt in <code>tools/untis-zugang.enc</code>. GitHub braucht deshalb nur noch das Secret <code>TRICOACH_KEY</code>.</span>` : `<span class="cap fg">In WebUntis (Browser) oben rechts auf deinen Namen → <b>Profil → Freigaben → Zugriff über Untis Mobile → Anzeigen</b>. Neben dem QR-Code stehen <b>Server/URL, Schule, Benutzer, Schlüssel</b> (und Schulnummer). Hier eintragen, dann den fertigen Text als Secret <code>UNTIS_ZUGANG</code> in GitHub einfügen. Die Angaben werden in TriCoach nicht gespeichert.</span>
+      <form id="zugang" class="plan" onsubmit="return false"><label>Server / URL<input id="z-url" placeholder="z. B. neilo.webuntis.com" autocomplete="off" spellcheck="false"></label><label>Schule<input id="z-school" placeholder="z. B. fev-bremen" autocomplete="off" spellcheck="false"></label><label>Benutzer<input id="z-user" autocomplete="off" spellcheck="false"></label><label>Schlüssel<input id="z-key" placeholder="16 Zeichen, A–Z und 2–7" autocomplete="off" spellcheck="false"></label><label>Schulnummer <em class="cap">optional</em><input id="z-nr" inputmode="numeric" autocomplete="off"></label><button class="btn primary" type="button" data-act="zcopy">Text für GitHub kopieren</button></form>`}</div>
+    <div class="opt"><b>3 · In GitHub eintragen <span class="tag">einmalig</span></b><ol class="steps">
+      <li><a href="${repoUrl}/settings/secrets/actions/new" target="_blank" rel="noopener">Repo → Settings → Secrets and variables → Actions → New repository secret</a>.</li>
+      <li>Name <code>TRICOACH_KEY</code>, Wert = dein Schlüssel aus Schritt 1 → <b>Add secret</b>.</li>
+      ${zOk ? '' : '<li>Noch einmal <b>New repository secret</b>: Name <code>UNTIS_ZUGANG</code>, Wert = der kopierte Text aus Schritt 2.</li>'}
+      <li><a href="${repoUrl}/actions/workflows/schule.yml" target="_blank" rel="noopener">Actions → „Schule (WebUntis)“</a> → <b>Run workflow</b> → grüner Button. Nach ca. 1 Minute hier „Jetzt abrufen“.</li></ol>
+      <span class="cap">Erzeugst du in WebUntis die Freigabe neu, ändert sich der Schlüssel – dann Schritt 2 wiederholen. GitHub pausiert geplante Jobs, wenn 60 Tage nichts im Repo passiert; dann einmal „Run workflow“ drücken.</span>
+      <div class="row" style="flex-wrap:wrap"><button class="btn primary" data-act="schoolsync">${icon('sync', 14)} Jetzt abrufen</button>${schoolOn() ? `<button class="btn" data-act="schooloff">Trennen</button>` : ''}</div>${SCH.err ? `<span class="cap warnc">${esc(SCH.err)}</span>` : ''}${hints}</div>
+    <div class="opt"><b>Apple Kalender</b><span class="cap fg"><b>Stundenplan:</b> In WebUntis → <b>Profil → Freigaben → „Kalender veröffentlichen“</b> (bzw. in der Untis-App Kalender → Abo) den iCal-Link kopieren, dann am iPhone in der <b>Kalender-App → Kalender → Kalender hinzufügen → Kalenderabo hinzufügen</b> einfügen. Der Stundenplan aktualisiert sich dort selbst. <b>Hausaufgaben & Prüfungen:</b> in TriCoach unter Schule „In Apple Kalender“ – mit Erinnerung am Vorabend bzw. 2 Tage und 1 Woche vorher.</span></div></div>`;
 }

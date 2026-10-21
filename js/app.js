@@ -101,6 +101,7 @@ document.addEventListener('click', async e => {
     case 'plan2log': planToLog(); break;
     case 'log': openLog(+v, S.view === 'swim' ? 'swim' : undefined); break;
     case 'lsport': readLogForm(); S.sheet.d.sport = v; S.sheet.d.art = ''; if (!hasDist(v)) S.sheet.d.dist = null; renderSheet(); break;
+    case 'lwhere': readLogForm(); S.sheet.d.where = v === 'ow' ? 'ow' : +v; if (v === 'ow') S.sheet.d.lanes = null; renderSheet(); break;
     case 'lexadd': readLogForm(); S.sheet.d.ex.push({ n: '', s: 3, r: '10', w: null }); renderSheet(); setTimeout(() => document.querySelector(`[name="ex-n${S.sheet.d.ex.length - 1}"]`)?.focus(), 30); break;
     case 'lexdel': readLogForm(); S.sheet.d.ex.splice(+v, 1); renderSheet(); break;
     case 'editact': openLogEdit(v); break;
@@ -123,10 +124,13 @@ document.addEventListener('click', async e => {
     case 'schoolsync': syncSchool(true); break;
     case 'schoolweek': S.schoolWeek = (S.schoolWeek || 0) + +v; render(); break;
     case 'skgen': { const i = document.getElementById('sk'); if (i) { i.value = newSchoolKey(); i.select(); } break; }
+    case 'zcopy': { const t = zugangText(); if (!t) { toast('Bitte Server, Schule, Benutzer und Schlüssel eintragen'); break; } if (!/^[A-Z2-7]{8,}$/i.test(document.getElementById('z-key').value.replace(/\s+/g, ''))) { toast('Der Schlüssel besteht nur aus A–Z und 2–7 – bitte prüfen'); break; } if (await copyText(t)) toast('Kopiert – in GitHub als Secret UNTIS_ZUGANG einfügen'); break; }
     case 'skcopy': { const i = document.getElementById('sk'); if (i?.value && await copyText(i.value)) toast('Schlüssel kopiert – als GitHub-Secret TRICOACH_KEY einfügen'); break; }
     case 'schooloff': SCH.data = null; SCH.err = ''; saveSch(); render(); toast('Stundenplan auf diesem Gerät entfernt'); break;
     case 'notify': if (window.Notification) { const r = await Notification.requestPermission(); toast(r === 'granted' ? 'Mitteilungen erlaubt' : 'Mitteilungen nicht erlaubt'); render(); } else toast('Mitteilungen gehen auf dem iPhone nur, wenn TriCoach auf dem Home-Bildschirm installiert ist.'); break;
-    case 'accept': { const r = recommendations()[+v]; if (r?.w) { PLAN.push({ id: 'p' + Date.now(), kind: 'workout', date: r.w.date, sport: r.w.sport, title: r.w.title, min: r.w.min }); savePlan(); el.outerHTML = '<span class="cap good">✓ Im Kalender eingetragen</span>'; } break; }
+    case 'rfmt': RACE.fmt = v; saveSettings(); render(); break;
+    case 'simadd': { const x = simSessions(racePredict(SET.cda || .3, SET.wetsuit))[+v]; if (x) { PLAN.push({ id: 'p' + Date.now(), kind: 'workout', date: nextFree(x.sport), sport: x.sport, art: x.art, title: x.title, min: x.min, notes: x.d }); savePlan(); el.outerHTML = `<span class="cap good">✓ Im Kalender eingetragen</span>`; toast('Im Kalender – Tag und Uhrzeit kannst du dort ändern'); } break; }
+    case 'accept': { const r = recommendations()[+v]; if (r?.w) { PLAN.push({ id: 'p' + Date.now(), kind: 'workout', date: r.w.date, sport: r.w.sport, title: r.w.title, min: r.w.min, notes: r.w.notes || r.d }); savePlan(); el.outerHTML = '<span class="cap good">✓ Im Kalender eingetragen</span>'; } break; }
     case 'applyftp': P.ftp = +v; saveSettings(); recompute(); toast(`FTP auf ${v} W gesetzt`); render(); break;
     case 'applycss': P.css = +v; saveSettings(); recompute(); toast(`CSS auf ${pv(+v)} gesetzt`); render(); break;
     case 'live-open': S.live = { started: false, splits: [], fuel: [], t0: 0, offset: 0, segStart: 0 }; S.back = 'race'; S.view = 'live'; window.scrollTo(0, 0); render(); requestWakeLock(); break;

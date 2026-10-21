@@ -14,6 +14,12 @@ Triathlon-App für die Garmin Forerunner 265 – läuft auf iPhone, iPad und PC 
 - **USB (PC):** Uhr anstecken, Ordner `GARMIN/Activity` wählen.
 - **Live-Puls:** Uhr auf „HF übertragen“, in TriCoach „Live-Puls“ → verbinden (Chrome/Edge/Android).
 
+## Neu in 2.4
+- **Schule per WebUntis-App-Schlüssel:** Anmeldung wie die Untis-App (Server, Schule, Benutzer, Schlüssel aus *Profil → Freigaben → Zugriff über Untis Mobile*) – klappt auch bei Microsoft-Login. Zugang entweder verschlüsselt im Repo (`tools/untis-zugang.enc`, dann nur Secret `TRICOACH_KEY`) oder als Secret `UNTIS_ZUGANG`.
+- **Wettkampf auf Sprint ausgelegt:** Sprint als Standard, Umschalter Volksdistanz/Sprint/Olympisch, Taper passend zur Distanz, neue Karte „Wettkampf simulieren“ (Koppeltraining, Renntempo-Schwimmen, Generalprobe, Rennpace).
+- **Schwimmen: 25-m-Bahn, 50-m-Bahn oder Freiwasser** beim Eintragen; von der Uhr erkannt und korrigierbar; in FIT-Datei und TrainingPeaks-Übergabe enthalten.
+- **Empfehlungen nach deinen Gewohnheiten:** übliche Trainingstage und -dauer, Lieblings-Schlüsseleinheiten deiner Trainerin aus dem TrainingPeaks-Plan; ihr Plan hat Vorrang, Vorschläge landen nur auf freien Tagen.
+
 ## Neu in 2.3
 - **Mein Tag** (Start-Tab „Heute“): Schule, Training, Termine, Hausaufgaben und Prüfungen in einem Tagesablauf, ab 17 Uhr automatisch der nächste Tag.
 - **Schule (WebUntis):** Stundenplan mit Entfall/Vertretung/Raumänderung, Infos der Lehrkräfte, Nachrichten des Tages, Hausaufgaben (abhaken, eigene ergänzen), Prüfungen. Auch als Ebene „Schule“ im Kalender.

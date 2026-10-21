@@ -1,6 +1,7 @@
 # TriCoach – holt alle 30 Minuten (6–22 Uhr) deinen WebUntis-Stundenplan mit Ausfall, Vertretung,
 # Hausaufgaben und Prüfungen, verschlüsselt ihn und legt ihn in den Branch „schule-daten“.
 # Lesen kann die Datei nur deine TriCoach-App mit deinem Schlüssel. Einrichtung: TriCoach → Einstellungen → Schule.
+# Nötig ist nur das Secret TRICOACH_KEY, wenn tools/untis-zugang.enc im Repo liegt – sonst zusätzlich UNTIS_ZUGANG (siehe tools/untis-sync.mjs).
 name: Schule (WebUntis)
 on:
   schedule:
@@ -22,9 +23,11 @@ jobs:
           node-version: 20
       - name: WebUntis abrufen und verschlüsseln
         env:
+          UNTIS_ZUGANG: ${{ secrets.UNTIS_ZUGANG }}
           UNTIS_SERVER: ${{ secrets.UNTIS_SERVER }}
           UNTIS_SCHOOL: ${{ secrets.UNTIS_SCHOOL }}
           UNTIS_USER: ${{ secrets.UNTIS_USER }}
+          UNTIS_KEY: ${{ secrets.UNTIS_KEY }}
           UNTIS_PASSWORD: ${{ secrets.UNTIS_PASSWORD }}
           TRICOACH_KEY: ${{ secrets.TRICOACH_KEY }}
         run: node tools/untis-sync.mjs out/schule.enc

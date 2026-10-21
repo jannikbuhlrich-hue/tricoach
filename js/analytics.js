@@ -240,23 +240,84 @@ function insights() {
   return out;
 }
 function nextSat(off = 0) { let d = addDays(TODAY, 1); while (d.getDay() !== 6) d = addDays(d, 1); return at(addDays(d, off), 9); }
+
+/* ---------- Deine Gewohnheiten & was deine Trainerin gerne plant ---------- */
+const WDS = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];   // nach getDay()
+const STD_NAME = /^(lauf|laufen|radfahrt|rad|schwimmen|athletik(training)?|aktivität|training|freiwasser|einheit)$/i;
+const coachWorkouts = (days = 120) => PLAN.filter(p => p.from === 'tp' && p.kind === 'workout' && p.date >= addDays(TODAY, -days));
+function topTitles(list) { const m = new Map(); list.forEach(t => { const k = String(t || '').trim(); if (k && !STD_NAME.test(k)) m.set(k, (m.get(k) || 0) + 1); }); return [...m].sort((a, b) => b[1] - a[1]); }
+function habits() {
+  const since = SINCE(90), out = {};
+  for (const s of ALL) {
+    const xs = ACTS.filter(a => a.sport === s && a.start >= since), cw = coachWorkouts().filter(p => p.sport === s);
+    if (!xs.length && !cw.length) continue;
+    const wd = Array(7).fill(0); xs.forEach(a => wd[a.start.getDay()]++);
+    const days = wd.map((n, i) => [i, n]).filter(([, n]) => n >= Math.max(2, xs.length * .15)).sort((a, b) => b[1] - a[1]).map(([i]) => i);
+    const wh = xs.map(swimWhere).filter(Boolean), whereTop = wh.length ? [...wh.reduce((m, w) => m.set(w, (m.get(w) || 0) + 1), new Map())].sort((a, b) => b[1] - a[1])[0][0] : null;
+    const HARD = /\d\s*[x×]|interv|schwelle|css|tempo|vo2|sweet|fahrtspiel|steiger|pyramide|sprint|rennpace|threshold|koppel/i;
+    const hardW = cw.filter(p => HARD.test(p.title + ' ' + (p.notes || ''))), ct = topTitles(hardW.map(p => p.title)), favP = ct[0] && hardW.filter(p => p.title.trim() === ct[0][0]).sort((a, b) => b.date - a.date)[0];
+    out[s] = {
+      n: xs.length, perWeek: xs.length / 13, min: xs.length ? median(xs.map(a => a.dur / 60)) : null, long: xs.length ? Math.max(...xs.map(a => a.dur / 60)) : null,
+      dist: median(xs.filter(a => a.dist).map(a => a.dist)), days, hour: xs.length ? median(xs.map(a => a.start.getHours() + a.start.getMinutes() / 60)) : null, where: s === 'swim' ? whereTop : null,
+      own: topTitles(xs.map(a => a.name))[0]?.[0] || null,
+      coach: cw.length ? { n: cw.length, min: median(cw.map(p => p.min || 60)), fav: favP && ct[0][1] >= 2 ? { title: favP.title.trim(), notes: favP.notes || '', min: favP.min || null, count: ct[0][1] } : null } : null
+    };
+  }
+  return out;
+}
+/* Nächster freier Tag für eine Einheit: bevorzugt deine üblichen Trainingstage, nie auf Tage mit Plan deiner Trainerin */
+function nextFree(sport, prefer) {
+  const h = habits()[sport], hour = h?.hour != null ? Math.min(20, Math.max(6, Math.round(h.hour))) : 17, want = prefer || h?.days || [];
+  const busy = d => PLAN.some(p => p.kind === 'workout' && sod(p.date).getTime() === d.getTime() && (p.from === 'tp' || p.sport === sport));
+  let first = null;
+  for (let i = 1; i <= 10; i++) { const d = addDays(TODAY, i); if (busy(d)) continue; first = first || d; if (!want.length || want.includes(d.getDay())) return at(d, hour); }
+  return at(first || addDays(TODAY, 1), hour);
+}
+function habitLine() {
+  const H = habits(), parts = SPORTS.filter(s => H[s]?.n >= 3).map(s => { const h = H[s]; return `${NAME[s]} ${h.days.length ? h.days.slice(0, 3).sort((a, b) => ((a + 6) % 7) - ((b + 6) % 7)).map(d => WDS[d]).join('/') + ' ' : ''}~${hm(h.min * 60)}${h.where ? ' (' + whereTxt(h.where) + ')' : ''}`; });
+  const cn = coachWorkouts().length;
+  return parts.length || cn ? `Typisch für dich: ${parts.join(' · ') || '–'}${cn ? ` · Plan deiner Trainerin: ${cn} Einheiten in 4 Monaten berücksichtigt` : ''}` : '';
+}
+const LONG = { volks: { bike: 75, run: 50 }, sprint: { bike: 105, run: 60 }, olympic: { bike: 150, run: 80 }, middle: { bike: 210, run: 105 }, full: { bike: 270, run: 150 } };
+const r5 = x => Math.round(x / 5) * 5;
+
 function recommendations() {
   if (!ACTS.length) return [];
-  const out = [], rd = readiness(), ins = insights(), tomorrow = at(addDays(TODAY, 1), 18);
-  if (rd.level === 'low' || LOAD.tsb < -30) out.push({ p: 1, t: 'Heute Regeneration', d: `Bereitschaft ${rd.score}/100, Form ${Math.round(LOAD.tsb)}. 30–40 min locker (Z1) oder Ruhetag.`, w: { date: tomorrow, sport: 'swim', title: 'Lockeres Ausschwimmen', min: 30 } });
+  const out = [], rd = readiness(), ins = insights(), H = habits(), short = ['volks', 'sprint'].includes(RACE.fmt);
+  const soon = PLAN.filter(p => p.from === 'tp' && p.kind === 'workout' && p.date >= TODAY && p.date < addDays(TODAY, 7)).sort((a, b) => a.date - b.date);
+  if (soon.length) out.push({ p: 0, t: `Deine Trainerin hat ${soon.length} Einheit${soon.length === 1 ? '' : 'en'} geplant`, d: `Ihr Plan geht vor: ${soon.slice(0, 4).map(p => `${WDS[p.date.getDay()]} ${esc(p.title)}`).join(' · ')}${soon.length > 4 ? ' …' : ''}. Vorschläge von TriCoach landen nur auf freien Tagen.` });
+  if (rd.level === 'low' || LOAD.tsb < -30) out.push({ p: 1, t: 'Heute Regeneration', d: `Bereitschaft ${rd.score}/100, Form ${Math.round(LOAD.tsb)}. 30–40 min locker (Z1) oder Ruhetag.`, w: { date: nextFree('swim'), sport: 'swim', title: 'Lockeres Ausschwimmen', min: 30 } });
   const days = Math.round((sod(RACE.date) - TODAY) / DAY);
-  if (days >= 0 && days <= 21) { const tp = taperBest(); out.push({ p: 1, t: `Taper (${days} Tage bis ${RACE.name})`, d: `Empfehlung: ${tp.days} Tage, Umfang −${Math.round(tp.red * 100)} %. Intensität kurz halten.` }); }
+  if (days >= 0 && days <= (TAPER_RANGE[RACE.fmt]?.[1] || 21) + 4) { const tp = taperBest(); out.push({ p: 1, t: `Taper (${days} Tage bis ${esc(RACE.name)})`, d: `Empfehlung für ${FMT[RACE.fmt].name}: ${tp.days} Tage, Umfang −${Math.round(tp.red * 100)} %. Intensität kurz und knackig halten.` }); }
   const weak = ins.find(i => i.k === 'focus')?.sport;
   if (rd.level !== 'low' && weak) {
-    const k = {
-      swim: { t: 'Schlüsseleinheit Schwimmen', d: `10×100 m @ CSS (${pv(P.css)}/100m), 15 s Pause. Vorher 4×50 m Technik.`, w: { title: 'CSS 10×100', min: 55 } },
-      bike: { t: 'Schlüsseleinheit Rad', d: `3×15 min Sweet Spot @ ${Math.round(P.ftp * .88)}–${Math.round(P.ftp * .93)} W, 5 min Pause.`, w: { title: 'Sweet Spot 3×15', min: 80 } },
-      run: { t: 'Schlüsseleinheit Laufen', d: `5×1 km @ Schwelle (${pv(P.thrPace)}/km), 90 s Trabpause.`, w: { title: 'Schwelle 5×1 km', min: 60 } }
+    const h = H[weak] || {}, ow = weak === 'swim' && h.where === 'ow';
+    const T = {
+      swim: short ? (ow ? { t: 'Schlüsseleinheit Freiwasser', d: `15 min einschwimmen, 6×3 min @ Renntempo (${pv(P.css + 2)}/100m) mit Orientierung alle 6–8 Züge, 1 min locker. 4× Wendeboje üben.`, title: 'Freiwasser 6×3 min', min: 50 }
+        : { t: 'Schlüsseleinheit Schwimmen', d: `300 m ein, 6×50 m steigern, 8×100 m @ CSS (${pv(P.css)}/100m) mit 15 s Pause, 4×25 m Sprint, 200 m aus.`, title: 'CSS 8×100 + Sprints', min: 50 })
+        : { t: 'Schlüsseleinheit Schwimmen', d: `10×100 m @ CSS (${pv(P.css)}/100m), 15 s Pause. Vorher 4×50 m Technik.`, title: 'CSS 10×100', min: 55 },
+      bike: short ? { t: 'Schlüsseleinheit Rad', d: `4×6 min @ ${Math.round(P.ftp * 1.0)}–${Math.round(P.ftp * 1.05)} W (VO2 Max/Schwelle), 4 min locker. Sprint-Rad ist kurz und hart.`, title: 'Rad 4×6 min', min: 70 }
+        : { t: 'Schlüsseleinheit Rad', d: `3×15 min Sweet Spot @ ${Math.round(P.ftp * .88)}–${Math.round(P.ftp * .93)} W, 5 min Pause.`, title: 'Sweet Spot 3×15', min: 80 },
+      run: short ? { t: 'Schlüsseleinheit Laufen', d: `6×800 m @ 5-km-Tempo (${pv(P.thrPace * .96)}/km), 2 min Trabpause.`, title: 'Laufen 6×800 m', min: 55 }
+        : { t: 'Schlüsseleinheit Laufen', d: `5×1 km @ Schwelle (${pv(P.thrPace)}/km), 90 s Trabpause.`, title: 'Schwelle 5×1 km', min: 60 }
     }[weak];
-    out.push({ p: 2, sport: weak, t: k.t, d: k.d, w: { ...k.w, date: tomorrow, sport: weak } });
+    let min = h.min ? Math.min(T.min * 1.3, Math.max(T.min * .8, r5((T.min + h.min) / 2))) : T.min;
+    let d = T.d + (h.n >= 4 ? ` Dauer an deine üblichen Einheiten (~${hm(h.min * 60)}) angepasst.` : '');
+    let title = T.title, notes = T.d;
+    const fav = h.coach?.fav;
+    if (fav) { title = fav.title; min = fav.min || min; notes = fav.notes || T.d; d = `Orientiert an deiner Trainerin: Sie plant dir hier am häufigsten „${esc(fav.title)}“ (${fav.count}× in 4 Monaten).${fav.notes ? ' ' + esc(fav.notes.slice(0, 160)) + (fav.notes.length > 160 ? ' …' : '') : ''} Alternative: ${T.d}`; }
+    out.push({ p: 2, sport: weak, t: T.t, d, w: { date: nextFree(weak), sport: weak, title, min: Math.round(min), notes } });
   }
-  if (!ACTS.some(a => a.sport === 'bike' && a.start >= SINCE(10) && a.dur >= 9000)) out.push({ p: 3, sport: 'bike', t: 'Lange Radausfahrt fehlt', d: `Seit 10 Tagen keine Ausfahrt über 2,5 h. Am Wochenende 3 h in Z2 (${Math.round(P.ftp * .6)}–${Math.round(P.ftp * .75)} W).`, w: { date: nextSat(), sport: 'bike', title: 'Lange Grundlage', min: 180 } });
-  if (!ACTS.some(a => a.sport === 'run' && a.start >= SINCE(10) && a.dur >= 4500)) out.push({ p: 3, sport: 'run', t: 'Langer Lauf fehlt', d: `75–90 min locker bei ${pv(P.thrPace / .8)}/km.`, w: { date: nextSat(1), sport: 'run', title: 'Langer Lauf', min: 80 } });
+  const L = LONG[RACE.fmt] || LONG.sprint;
+  for (const s of ['bike', 'run']) {
+    const target = L[s], h = H[s] || {};
+    if (ACTS.some(a => a.sport === s && a.start >= SINCE(10) && a.dur >= target * 60 * .8)) continue;
+    const min = r5(Math.min(target, Math.max(target * .7, (h.long || target) * 1.1)));
+    const wkend = [6, 0].filter(x => !h.days?.length || h.days.includes(x));
+    const txt = s === 'bike' ? `Seit 10 Tagen keine Ausfahrt über ${hm(target * 48)}. ${hm(min * 60)} in Z2 (${Math.round(P.ftp * .6)}–${Math.round(P.ftp * .75)} W)${short ? ' – für Sprint reicht das als lange Einheit.' : '.'}` : `${hm(min * 60)} locker bei ${pv(P.thrPace / .8)}/km${short ? ', die letzten 10 min zügig im 10-km-Tempo.' : '.'}`;
+    out.push({ p: 3, sport: s, t: s === 'bike' ? 'Lange Radausfahrt fehlt' : 'Langer Lauf fehlt', d: txt, w: { date: nextFree(s, wkend.length ? wkend : [6, 0]), sport: s, title: s === 'bike' ? 'Lange Grundlage' : 'Langer Lauf', min } });
+  }
+  if (short && !ACTS.some(a => a.start >= SINCE(14) && /koppel|brick/i.test(a.name + ' ' + (a.notes || '')))) out.push({ p: 3, sport: 'run', t: 'Koppeltraining einbauen', d: `Für Sprint entscheidend: nach dem Rad direkt 10–15 min laufen, die ersten 5 min im Renntempo. Fertige Vorschläge unter Wettkampf → „Wettkampf simulieren“.` });
   if (LOAD.tsb > 10 && rd.level === 'high') out.push({ p: 2, t: 'Du bist frisch', d: `Form +${Math.round(LOAD.tsb)} und hohe Bereitschaft: guter Tag für einen Test (FTP, CSS oder 5 km).` });
   return out.sort((a, b) => a.p - b.p);
 }
@@ -264,6 +325,7 @@ function recommendations() {
 /* ---------- Wettkampf ---------- */
 const FMT = {
   sprint: { name: 'Sprint', swim: 750, bike: 20000, run: 5000, ifb: .92, runF: 1.04, swimOff: 0, ctl: 50, trans: 150 },
+  volks: { name: 'Volksdistanz', swim: 500, bike: 20000, run: 5000, ifb: .93, runF: 1.03, swimOff: -1, ctl: 40, trans: 150 },
   olympic: { name: 'Olympisch', swim: 1500, bike: 40000, run: 10000, ifb: .88, runF: 1.07, swimOff: 2, ctl: 65, trans: 180 },
   middle: { name: 'Mitteldistanz (70.3)', swim: 1900, bike: 90000, run: 21097.5, ifb: .78, runF: 1.13, swimOff: 4, ctl: 80, trans: 300 },
   full: { name: 'Langdistanz', swim: 3800, bike: 180000, run: 42195, ifb: .70, runF: 1.25, swimOff: 7, ctl: 100, trans: 480 }
@@ -286,7 +348,8 @@ function taperSim(days, red) {
   const proj = pmc([], addDays(TODAY, 1), race, fut, LOAD?.ctl || 0, LOAD?.atl || 0), last = proj[proj.length - 1], peak = Math.max(...proj.map(p => p.ctl));
   return { days, red, proj, tsb: last.tsb, ctl: last.ctl, loss: peak > 0 ? (peak - last.ctl) / peak * 100 : 0 };
 }
-function taperBest() { let best, bs = Infinity; for (let d = 5; d <= 21; d += 2) for (let r = .3; r <= .601; r += .05) { const x = taperSim(d, r), s = Math.abs(x.tsb - 15) + x.loss * .8; if (s < bs) { bs = s; best = x; } } return best; }
+const TAPER_RANGE = { volks: [3, 8], sprint: [3, 10], olympic: [5, 14], middle: [7, 18], full: [9, 21] };
+function taperBest() { let best, bs = Infinity; const [d0, d1] = TAPER_RANGE[RACE.fmt] || [5, 21]; for (let d = d0; d <= d1; d++) for (let r = .3; r <= .601; r += .05) { const x = taperSim(d, r), s = Math.abs(x.tsb - 15) + x.loss * .8; if (s < bs) { bs = s; best = x; } } return best; }
 const FUEL = [{ n: 'Gel', c: 25, fl: 0, na: 50 }, { n: 'Koffein-Gel', c: 25, fl: 0, na: 50, caf: 75 }, { n: 'Iso-Flasche 750 ml', c: 60, fl: 750, na: 500 }, { n: 'Riegel', c: 40, fl: 0, na: 100 }, { n: 'Wasser 500 ml', c: 0, fl: 500, na: 0 }, { n: 'Salztablette', c: 0, fl: 0, na: 250 }];
 function fuelPlan(pr) {
   const temp = RACE.temp ?? 20, h = pr.total / 3600, carbs = h < 1.25 ? 30 : h < 2.5 ? 60 : h < 4 ? 75 : 90;
@@ -295,4 +358,23 @@ function fuelPlan(pr) {
   for (let m = bs + 15, c = 0; m < be - 10; m += 20, c++) steps.push({ m, sport: 'bike', item: c % 3 === 0 ? FUEL[2] : (pr.bike > 10800 && c % 3 === 1 ? FUEL[3] : FUEL[0]) });
   for (let m = rs + 20; m < re - 10; m += 28) steps.push({ m, sport: 'run', item: (m - rs) > pr.run / 60 * .6 ? FUEL[1] : FUEL[0] });
   return { target, steps };
+}
+
+/* Wettkampf im Training simulieren: Einheiten mit den Zielwerten aus der Prognose */
+function simSessions(pr) {
+  const f = FMT[RACE.fmt], w = Math.round(pr.power), rp = pv(pr.runPace), sp = pv(pr.swimPace), km = x => de(x / 1000, x % 1000 ? 2 : 0).replace(/(,\d)0$/, '$1');
+  const shortRace = ['volks', 'sprint'].includes(RACE.fmt);
+  const legBike = shortRace ? 5000 : 10000, legRun = shortRace ? 1500 : 2500, reps = shortRace ? 3 : 3;
+  const swimRep = shortRace ? (RACE.fmt === 'volks' ? 100 : 250) : 500, swimN = Math.max(2, Math.round(f.swim / swimRep));
+  const generalMin = Math.round(pr.total / 60 + 25);
+  return [
+    { sport: 'bike', title: `Koppeltraining ${reps}× Rad/Lauf`, min: Math.round(reps * (legBike / pr.v + legRun / 1000 * pr.runPace) / 60 + 25),
+      d: `Einfahren 15 min, dann ${reps}× (${km(legBike)} km Rad @ ${w} W → schnell wechseln → ${km(legRun)} km Lauf @ ${rp}/km), 3 min locker zwischen den Blöcken. Übt die schweren Beine nach dem Rad.` },
+    { sport: 'swim', title: `Renntempo ${swimN}×${swimRep} m`, min: Math.round((swimN * swimRep / 100 * pr.swimPace + 1200) / 60 / 5) * 5,
+      d: `Einschwimmen 400 m, dann ${swimN}×${swimRep} m @ ${sp}/100m${SET.wetsuit ? ' (mit Neo gerechnet)' : ''}, 20 s Pause. Ergibt genau deine ${km(f.swim)} km im Renntempo. Wenn möglich im Freiwasser.` },
+    { sport: 'other', art: 'Koppeltraining', title: `Generalprobe ${f.name}`, min: generalMin,
+      d: `Komplette ${f.name} am Stück (${km(f.swim)} / ${km(f.bike)} / ${km(f.run)} km) mit Wechseln – 10–14 Tage vor dem Rennen, mit dem Wettkampfmodus in TriCoach stoppen. Ziel: ${dur(pr.total)}. Fueling wie am Renntag testen.` },
+    { sport: 'run', title: `Rennpace ${shortRace ? '5×1' : '4×2'} km`, min: shortRace ? 45 : 60,
+      d: `${shortRace ? '5×1 km' : '4×2 km'} @ ${rp}/km (Lauftempo nach dem Rad laut Prognose), 90 s Trabpause. Hilft, das Tempo im Rennen nicht zu überziehen.` }
+  ];
 }
