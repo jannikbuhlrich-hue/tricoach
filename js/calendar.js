@@ -429,10 +429,19 @@ function parseIcsDate(v, params) {
   const d = m[7] ? new Date(Date.UTC(+m[1], m[2] - 1, +m[3], +m[4], +m[5])) : new Date(+m[1], m[2] - 1, +m[3], +m[4], +m[5]);
   return { d, allDay: false };
 }
-function importIcs(text, src) {
+/* Geplante Dauer aus TrainingPeaks-Text: „Planned Time: 1:30:00“, „1:15 h“, „90 min“, „2h“ */
+function tpMinutes(t, strict) {
+  let m = t.match(/(?:planned (?:time|duration)|geplante (?:zeit|dauer)|dauer|duration)\s*:?\s*(\d{1,2}):(\d{2})(?::\d{2})?/i) || t.match(/\b(\d{1,2}):(\d{2})(?::\d{2})?\s*h\b/i);
+  if (m) return +m[1] * 60 + +m[2];
+  if (strict) return null;   // in der Beschreibung nur „Planned Time“ – „15 min einlaufen“ ist nicht die Gesamtdauer
+  if ((m = t.match(/\b(\d{2,3})\s*(?:min|minuten|')(?![a-z])/i))) return +m[1];
+  if ((m = t.match(/\b(\d(?:[.,]\d+)?)\s*(?:h|std|stunden?)\b/i))) return Math.round(parseFloat(m[1].replace(',', '.')) * 60);
+  return null;
+}
+function importIcs(text, src, quiet) {
   const lines = text.replace(/\r\n[ \t]/g, '').replace(/\n[ \t]/g, '').split(/\r?\n/);
   const unesc = s => s.replace(/\\n/gi, '\n').replace(/\\([,;\\])/g, '$1');
-  let ev = null, inAlarm = false, added = 0, updated = 0;
+  let ev = null, inAlarm = false, added = 0, updated = 0, changed = 0; const ids = new Set(); let lo = null, hi = null;
   for (const line of lines) {
     if (line === 'BEGIN:VEVENT') { ev = { ex: [] }; continue; }
     if (!ev) continue;
@@ -449,8 +458,10 @@ function importIcs(text, src) {
         if (p.kind === 'workout' && !p.sport) p.sport = 'other';
         if (ev.end) { if (p.allDay) p.days = Math.max(1, Math.round((ev.end.d - ev.start.d) / DAY)); else p.min = Math.max(5, Math.round((ev.end.d - ev.start.d) / 60000)); }
         else if (ev.dur) p.min = ev.dur; else p.min = 60;
+        if (src === 'tp' && p.kind === 'workout') { const m = tpMinutes(ev.summary || '') || tpMinutes(ev.desc || '', true); if (m) p.min = m; }
         const i = PLAN.findIndex(x => x.id === p.id);
-        if (i >= 0) { const keep = PLAN[i]; PLAN[i] = { ...keep, ...p, alarm: keep.alarm ?? p.alarm, prio: keep.prio || p.prio, fmt: keep.fmt !== 'other' ? keep.fmt : p.fmt, kind: keep.kind || p.kind }; updated++; } else { PLAN.push(p); added++; }
+        ids.add(p.id); if (!lo || p.date < lo) lo = p.date; if (!hi || p.date > hi) hi = p.date;
+        if (i >= 0) { const keep = PLAN[i]; if (keep.title !== p.title || +new Date(keep.date) !== +p.date || keep.min !== p.min || (keep.notes || '') !== p.notes) changed++; PLAN[i] = { ...keep, ...p, alarm: keep.alarm ?? p.alarm, prio: keep.prio || p.prio, fmt: keep.fmt !== 'other' ? keep.fmt : p.fmt, kind: keep.kind || p.kind }; updated++; } else { PLAN.push(p); added++; }
       }
       ev = null; continue;
     }
@@ -477,8 +488,9 @@ function importIcs(text, src) {
       }
     }
   }
-  savePlan(); render();
-  toast(added || updated ? `${added} Einträge importiert${updated ? `, ${updated} aktualisiert` : ''}` : 'Keine Termine in der Datei gefunden');
+  savePlan();
+  if (!quiet) { render(); toast(added || updated ? `${added} Einträge importiert${updated ? `, ${updated} aktualisiert` : ''}` : 'Keine Termine in der Datei gefunden'); }
+  return { added, updated, changed, ids, lo, hi };
 }
 
 /* ---------- Hinweise, solange TriCoach offen ist (zuverlässig: über den Apple-Kalender-Export) ---------- */

@@ -14,6 +14,11 @@ Triathlon-App für die Garmin Forerunner 265 – läuft auf iPhone, iPad und PC 
 - **USB (PC):** Uhr anstecken, Ordner `GARMIN/Activity` wählen.
 - **Live-Puls:** Uhr auf „HF übertragen“, in TriCoach „Live-Puls“ → verbinden (Chrome/Edge/Android).
 
+Neu in 2.5
+
+- **TrainingPeaks-Plan automatisch:** GitHub-Job `TrainingPeaks-Plan` (.github/workflows/tp.yml) holt stündlich den privaten iCal-Link, verschlüsselt ihn mit `TRICOACH_KEY` (Branch `tp-daten`). TriCoach lädt ihn beim Öffnen und alle 30 Minuten, übernimmt Änderungen deiner Trainerin, entfernt gelöschte Einheiten und liest die geplante Dauer aus dem Titel. Kein TrainingPeaks-Passwort nötig.
+- Link hinterlegen: `TRICOACH_KEY=… node tools/tp-sync.mjs --set "webcal://…"` (schreibt `tools/tp-zugang.enc`) oder Secret `TP_ICAL`.
+
 ## Neu in 2.4
 - **Schule per WebUntis-App-Schlüssel:** Anmeldung wie die Untis-App (Server, Schule, Benutzer, Schlüssel aus *Profil → Freigaben → Zugriff über Untis Mobile*) – klappt auch bei Microsoft-Login. Zugang entweder verschlüsselt im Repo (`tools/untis-zugang.enc`, dann nur Secret `TRICOACH_KEY`) oder als Secret `UNTIS_ZUGANG`.
 - **Wettkampf auf Sprint ausgelegt:** Sprint als Standard, Umschalter Volksdistanz/Sprint/Olympisch, Taper passend zur Distanz, neue Karte „Wettkampf simulieren“ (Koppeltraining, Renntempo-Schwimmen, Generalprobe, Rennpace).

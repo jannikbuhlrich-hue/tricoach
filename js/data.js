@@ -18,7 +18,7 @@ function loadSettings() {
     race, source: s.source || 'demo', icuKey: s.icuKey || '', design: s.design || 'nacht',
     lastSync: s.lastSync || null, syncDays: s.syncDays || 120, wetsuit: s.wetsuit ?? true, cda: s.cda || null,
     calView: s.calView || 'month', calHidden: s.calHidden || [], showDone: s.showDone ?? true,
-    sprintV: 1, goals: s.goals || null, yearGoals: s.yearGoals || null, shortcut: s.shortcut || 'TriCoach', tpIcal: s.tpIcal || '', tpIcalAt: s.tpIcalAt || null
+    sprintV: 1, goals: s.goals || null, yearGoals: s.yearGoals || null, shortcut: s.shortcut || 'TriCoach', tpIcal: s.tpIcal || '', tpIcalAt: s.tpIcalAt || null, tpAt: s.tpAt || null, tpVia: s.tpVia || '', tpSeen: s.tpSeen || 0
   };
 }
 function saveSettings() {

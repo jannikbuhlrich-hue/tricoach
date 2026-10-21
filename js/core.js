@@ -1,7 +1,7 @@
 'use strict';
 /* TriCoach – Basis: Hilfsfunktionen, Formatierung, Grafik-Bausteine */
 
-const APP_VERSION = '2.4.0';
+const APP_VERSION = '2.5.0';
 const DAY = 86400000;
 const DT = 10; // alle Zeitreihen werden auf 10-s-Raster gebracht
 const SPORTS = ['swim', 'bike', 'run'];                       // Triathlon-Disziplinen (Analysen, Prognosen)

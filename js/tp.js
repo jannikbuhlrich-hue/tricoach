@@ -131,6 +131,14 @@ function tpRaceSheet() {
   return sheetWrap('Wettkampf an TrainingPeaks', b, false);
 }
 
+const tpRepoUrl = () => tpDataUrl().replace('https://raw.githubusercontent.com/', 'https://github.com/').replace(/\/tp-daten\/tp\.enc$/, '');
+function tpPlanStatus() {
+  if (!SET.tpIcalAt) return { tag: ' <small>noch nicht verbunden</small>', line: '' };
+  const n = PLAN.filter(p => p.from === 'tp' && p.date >= TODAY).length;
+  const st = new Date(SET.tpAt || SET.tpIcalAt).toLocaleString('de-DE', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  return { tag: ` <span class="tag">${SET.tpVia === 'github' ? 'automatisch' : 'nur dieses Gerät'}</span>`, line: `<span class="cap">Stand ${st} · ${n} kommende Einträge</span>` };
+}
+
 /* Anleitung in den Einstellungen */
 function tpSettingsCard() {
   const open = PLAN.filter(p => p.kind === 'race' && !p.tp && p.date >= TODAY).length, todo = ACTS.filter(a => a.source === 'manual' && !a.tp && a.start >= addDays(TODAY, -14)).length;
@@ -148,19 +156,54 @@ function tpSettingsCard() {
       <form id="tpform" class="plan"><label>Name des Kurzbefehls<input id="tp-sc" value="${esc(SET.shortcut)}" autocomplete="off"></label><button class="btn" type="submit">Speichern</button></form></div>
     <div class="opt"><b>Am PC: FIT-Datei</b><span class="cap fg">Bei jeder Einheit „An TrainingPeaks“ → „FIT-Datei“. Die Datei in TrainingPeaks (Web) auf den Kalendertag ziehen – fertig.</span></div>
     <div class="opt"><b>Wettkämpfe & Events</b><span class="cap fg">Beim Wettkampf „An TrainingPeaks übergeben“: Daten werden kopiert, du legst das Event in TrainingPeaks mit gleicher Priorität A/B/C an. TriCoach merkt sich, was schon drin ist.</span></div>
-    <div class="opt"><b>Plan deiner Trainerin in TriCoach</b><span class="cap fg">In TrainingPeaks (Web, Premium) unter <b>Settings → Account → Calendar</b> den iCal-/Webcal-Link kopieren und hier einfügen. Geplante Einheiten und Events erscheinen dann im TriCoach-Kalender mit Ampel (grün = erledigt, rot = verpasst). TrainingPeaks liefert 5 Tage zurück und 14 Tage voraus. Tipp: Denselben Link in Apple Kalender unter <b>Kalender hinzufügen → Kalenderabonnement</b> eintragen, dann ist der Plan auch dort.</span>
-      <form id="tpical" class="plan"><label style="grid-column:1/-1">iCal-Link<input id="tp-ical" type="url" placeholder="webcal://…trainingpeaks.com/…ics" value="${esc(SET.tpIcal || '')}" autocomplete="off"></label><button class="btn" type="submit">${icon('sync', 14)} Plan holen</button></form>
-      <span class="cap">Klappt das Holen nicht (manche Browser blockieren das), den Link in Safari öffnen, Datei sichern und unter Kalender → „Kalenderdatei importieren“ laden.</span></div></div>`;
+    <div class="opt"><b>Plan deiner Trainerin in TriCoach${tpPlanStatus().tag}</b>${tpPlanStatus().line}
+      <span class="cap fg">Geplante Einheiten und Events erscheinen im TriCoach-Kalender mit Ampel (grün = erledigt, rot = verpasst). Ändert oder löscht deine Trainerin etwas, zieht TriCoach mit. Ein TrainingPeaks-Passwort braucht es dafür nicht – nur den privaten iCal-Link aus TrainingPeaks (Web) unter <b>Settings → Account → Calendar</b>.</span>
+      ${SET.tpVia === 'github' ? '<details><summary class="cap">Einrichtung</summary>' : ''}<ol class="steps"><li>Link kopieren und an Claude schicken – er landet nur verschlüsselt im Repo (oder selbst als GitHub-Secret <b>TP_ICAL</b> eintragen).</li>
+      <li><a href="${tpRepoUrl()}/actions/workflows/tp.yml" target="_blank" rel="noopener">Actions → „TrainingPeaks-Plan“</a> → <b>Run workflow</b>. Danach läuft der Job stündlich von allein.</li>
+      <li>Hier „Plan holen“ – ab dann holt TriCoach den Plan beim Öffnen und alle 30 Minuten selbst.</li></ol>${SET.tpVia === 'github' ? '</details>' : ''}
+      <div class="row" style="flex-wrap:wrap"><button class="btn primary" data-act="tpnow">${icon('sync', 14)} Plan holen</button></div>${TP.err ? `<span class="cap warnc">${esc(TP.err)}</span>` : ''}
+      <details><summary class="cap">Link nur auf diesem Gerät nutzen (ohne GitHub)</summary>
+      <form id="tpical" class="plan"><label style="grid-column:1/-1">iCal-Link<input id="tp-ical" type="url" placeholder="webcal://…trainingpeaks.com/…ics" value="${esc(SET.tpIcal || '')}" autocomplete="off"></label><button class="btn" type="submit">Speichern & holen</button></form>
+      <span class="cap">Klappt das Holen nicht (Browser blockiert), den Link in Safari öffnen, Datei sichern und unter Kalender → „Kalenderdatei importieren“ laden. Tipp: Denselben Link in Apple Kalender unter <b>Kalender hinzufügen → Kalenderabonnement</b> eintragen, dann ist der Plan auch dort.</span></details></div></div>`;
 }
 
-/* Plan aus dem TrainingPeaks-iCal-Link laden (falls der Browser es zulässt) */
+/* Plan deiner Trainerin: bevorzugt verschlüsselt vom GitHub-Job (Branch „tp-daten“, siehe .github/workflows/tp.yml),
+   sonst direkt über den iCal-Link (klappt nur, wenn der Browser es zulässt). Vom Trainer gelöschte Einheiten verschwinden auch hier. */
+const TP = { busy: false, err: '' };
+const tpDataUrl = () => schoolUrl().replace(/\/schule-daten\/schule\.enc$/, '/tp-daten/tp.enc');
 async function fetchTpIcal(manual) {
-  if (!SET.tpIcal) return;
+  if (TP.busy) return;
+  if (!navigator.onLine) { if (manual) toast('Offline – Plan vom letzten Abruf'); return; }
+  TP.busy = true; if (manual) render();
+  let ics = null, at = null, via = '';
   try {
-    const r = await fetch(SET.tpIcal.trim().replace(/^webcal:/i, 'https:'), { cache: 'no-store' });
-    if (!r.ok) throw new Error('Status ' + r.status);
-    const t = await r.text(); if (!t.includes('BEGIN:VCALENDAR')) throw new Error('keine Kalenderdatei');
-    importIcs(t, 'tp');
-    SET.tpIcalAt = Date.now(); saveSettings();
-  } catch (e) { if (manual) toast('Direkt holen klappt hier nicht (' + e.message + '). Link in Safari öffnen, Datei sichern und importieren.'); }
+    if (SCH.key) {
+      const r = await fetch(tpDataUrl() + '?t=' + Math.floor(Date.now() / 60000), { cache: 'no-store' });
+      if (r.ok) {
+        let d; try { d = await decryptSchool(await r.text(), SCH.key); } catch (e) { throw new Error('Schlüssel passt nicht zum GitHub-Secret TRICOACH_KEY'); }
+        ics = d.ics; at = d.at; via = 'github';
+      }
+    }
+    if (!ics && SET.tpIcal) {
+      try {
+        const r = await fetch(SET.tpIcal.trim().replace(/^webcal:/i, 'https:'), { cache: 'no-store' });
+        if (!r.ok) throw new Error('Status ' + r.status);
+        ics = await r.text(); at = new Date().toISOString(); via = 'direct';
+      } catch (e) { throw new Error(`Direkt holen klappt hier nicht (${e.message}). Am besten den Link über GitHub laufen lassen (siehe unten).`); }
+    }
+    if (!ics) { if (manual) toast(SCH.key ? 'Noch kein Plan von GitHub – läuft der Job „TrainingPeaks-Plan“ schon?' : 'Erst den TriCoach-Schlüssel (Einstellungen → Schule) eintragen'); return; }
+    if (!ics.includes('BEGIN:VCALENDAR')) throw new Error('Antwort ist keine Kalenderdatei');
+    const res = importIcs(ics, 'tp', true);
+    let removed = 0;
+    if (res.lo) {
+      const lo = sod(res.lo), hi = new Date(Math.max(+addDays(sod(res.hi), 1), +addDays(TODAY, 8)));   // TrainingPeaks liefert mind. ~2 Wochen voraus
+      PLAN = PLAN.filter(p => { const gone = p.from === 'tp' && p.date >= lo && p.date < hi && !res.ids.has(p.id) && !isDone(p); if (gone) removed++; return !gone; });
+      savePlan();
+    }
+    const parts = [res.added && `${res.added} neu`, res.changed && `${res.changed} geändert`, removed && `${removed} entfernt`].filter(Boolean);
+    if (manual) toast('TrainingPeaks-Plan aktualisiert · ' + (parts.join(', ') || 'keine Änderungen'));
+    else if (parts.length && SET.tpSeen) toast('Trainerin hat den Plan geändert: ' + parts.join(', '));
+    SET.tpIcalAt = Date.now(); SET.tpAt = at; SET.tpVia = via; SET.tpSeen = 1; saveSettings(); TP.err = '';
+  } catch (e) { TP.err = e instanceof TypeError ? 'Keine Verbindung zu GitHub – später nochmal' : e.message; if (manual) toast(TP.err); }
+  finally { TP.busy = false; render(); }
 }

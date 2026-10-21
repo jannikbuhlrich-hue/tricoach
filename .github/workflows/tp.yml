@@ -1,0 +1,37 @@
+# TriCoach – holt stündlich (6–23 Uhr) den Trainingsplan deiner Trainerin aus TrainingPeaks (privater iCal-Link),
+# verschlüsselt ihn mit TRICOACH_KEY und legt ihn in den Branch „tp-daten“. Die App holt ihn von dort automatisch.
+# Nötig: Secret TRICOACH_KEY und der Link in tools/tp-zugang.enc (oder als Secret TP_ICAL).
+name: TrainingPeaks-Plan
+on:
+  schedule:
+    - cron: '23 4-21 * * *'   # UTC = stündlich 6–23 Uhr deutscher Zeit (Sommer)
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: tp
+  cancel-in-progress: true
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: TrainingPeaks-Plan holen und verschlüsseln
+        env:
+          TP_ICAL: ${{ secrets.TP_ICAL }}
+          TRICOACH_KEY: ${{ secrets.TRICOACH_KEY }}
+        run: node tools/tp-sync.mjs out/tp.enc
+      - name: Verschlüsselte Datei veröffentlichen
+        if: hashFiles('out/tp.enc') != ''
+        run: |
+          cd out
+          git init -q -b tp-daten
+          git config user.name "TriCoach Bot"
+          git config user.email "tricoach-bot@users.noreply.github.com"
+          git add tp.enc
+          git commit -q -m "TrainingPeaks-Plan aktualisiert"
+          git push -q --force "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" tp-daten

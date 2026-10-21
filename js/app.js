@@ -122,6 +122,7 @@ document.addEventListener('click', async e => {
     case 'hwics': hwIcs(); break;
     case 'exics': examIcs(); break;
     case 'schoolsync': syncSchool(true); break;
+    case 'tpnow': fetchTpIcal(true); break;
     case 'schoolweek': S.schoolWeek = (S.schoolWeek || 0) + +v; render(); break;
     case 'skgen': { const i = document.getElementById('sk'); if (i) { i.value = newSchoolKey(); i.select(); } break; }
     case 'zcopy': { const t = zugangText(); if (!t) { toast('Bitte Server, Schule, Benutzer und Schlüssel eintragen'); break; } if (!/^[A-Z2-7]{8,}$/i.test(document.getElementById('z-key').value.replace(/\s+/g, ''))) { toast('Der Schlüssel besteht nur aus A–Z und 2–7 – bitte prüfen'); break; } if (await copyText(t)) toast('Kopiert – in GitHub als Secret UNTIS_ZUGANG einfügen'); break; }
@@ -218,8 +219,10 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
 function autoSync() { if (SET.source === 'icu' && (!SET.lastSync || Date.now() - SET.lastSync > 3 * 60000)) runSync(false); }
 let lastSchool = 0;
 const schoolTick = () => { if (SCH.key && Date.now() - lastSchool > 10 * 60000) { lastSchool = Date.now(); syncSchool(false); } };
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { recompute(); autoSync(); checkForUpdate(false); checkAlarms(); schoolTick(); if (!S.sheet) render(); } });
-setInterval(() => { if (document.visibilityState === 'visible') { autoSync(); checkAlarms(); schoolTick(); } }, 60000);
+let lastTp = 0;   // TrainingPeaks-Plan: beim Öffnen und alle 30 Minuten
+const tpTick = () => { if ((SCH.key || SET.tpIcal) && Date.now() - lastTp > 30 * 60000) { lastTp = Date.now(); fetchTpIcal(false); } };
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { recompute(); autoSync(); checkForUpdate(false); checkAlarms(); schoolTick(); tpTick(); if (!S.sheet) render(); } });
+setInterval(() => { if (document.visibilityState === 'visible') { autoSync(); checkAlarms(); schoolTick(); tpTick(); } }, 60000);
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && S.sheet) closeSheet(); });
 window.addEventListener('online', autoSync);
 
@@ -232,6 +235,5 @@ window.addEventListener('online', autoSync);
   if (hash === 'log') S.sheet = { t: 'log', id: null, d: newLog(at(TODAY, Math.max(6, NOW.getHours() - 1))) };   // Kurzbefehl/Siri: „TriCoach eintragen“
   if (hash === 'new') S.sheet = { t: 'add' };
   render();
-  autoSync(); checkAlarms(); schoolTick();
-  if (SET.tpIcal && (!SET.tpIcalAt || Date.now() - SET.tpIcalAt > 6 * 3600000)) fetchTpIcal(false);
+  autoSync(); checkAlarms(); schoolTick(); tpTick();
 })();
