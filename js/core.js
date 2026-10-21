@@ -1,7 +1,7 @@
 'use strict';
 /* TriCoach – Basis: Hilfsfunktionen, Formatierung, Grafik-Bausteine */
 
-const APP_VERSION = '2.0.0';
+const APP_VERSION = '2.1.0';
 const DAY = 86400000;
 const DT = 10; // alle Zeitreihen werden auf 10-s-Raster gebracht
 const SPORTS = ['swim', 'bike', 'run'];
@@ -35,6 +35,7 @@ const kmh = v => num(v) ? de(v * 3.6, 1) + ' km/h' : '–';
 const dayTitle = d => d.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
 const shortDate = d => d.toLocaleDateString('de-DE', { day: 'numeric', month: 'short' });
 const time = d => d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+const sgn = (v, d = 0) => { if (!num(v)) return '–'; const r = +v.toFixed(d); return r === 0 ? de(0, d) : (r > 0 ? '+' : '−') + de(Math.abs(r), d); };
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 /* ---------- Icons ---------- */

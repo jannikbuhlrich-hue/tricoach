@@ -75,7 +75,11 @@ const isDone = p => ACTS.some(a => a.sport === p.sport && sameDay(a.start, p.dat
 async function saveActivities(list) {
   if (!list.length) return;
   await DB.put('acts', list);
-  if (SET.source !== 'demo') { ACTS.push(...list); recompute(); }
+  if (SET.source !== 'demo') {
+    const ids = new Set(list.map(a => a.id)), ext = new Set(list.map(a => a.extId).filter(Boolean));
+    ACTS = ACTS.filter(a => !ids.has(a.id) && !(a.partial && ext.has(a.extId)));
+    ACTS.push(...list); recompute();
+  }
 }
 
 /* ---------- intervals.icu (bekommt die Einheiten automatisch aus Garmin Connect) ---------- */
@@ -107,7 +111,7 @@ const ICU = (() => {
     // Fallback: nur Zusammenfassung
     const sport = sportOf(item.type || '');
     const a = {
-      id: 'icu-' + id, extId: String(id), source: 'icu', sport, name: name || NAME[sport],
+      id: 'icu-' + id, extId: String(id), source: 'icu', partial: true, sport, name: name || NAME[sport],
       start: new Date(item.start_date_local || item.start_date), dur: item.moving_time || item.elapsed_time || 0, dist: item.distance || 0,
       avgHr: item.average_heartrate ?? null, maxHr: item.max_heartrate ?? null, elev: item.total_elevation_gain ?? null, samples: [], laps: []
     };
@@ -125,17 +129,18 @@ const ICU = (() => {
   }
 
   async function sync(onProgress) {
-    const since = SET.lastSync ? addDays(new Date(SET.lastSync), -3) : addDays(new Date(), -SET.syncDays);
+    const since = SET.lastSync ? addDays(new Date(SET.lastSync), -7) : addDays(new Date(), -SET.syncDays);
     const oldest = isoDay(since), newest = isoDay(addDays(new Date(), 1));
     const list = await get(`/athlete/0/activities?oldest=${oldest}&newest=${newest}`);
-    const known = new Set(ACTS.map(a => a.extId).filter(Boolean));
+    // Einheiten ohne Herzfrequenz-Kurve (z. B. Datei war beim letzten Sync noch nicht fertig) werden erneut geladen
+    const known = new Set(ACTS.filter(a => !a.partial).map(a => a.extId).filter(Boolean));
     const todo = list.filter(x => !known.has(String(x.id)));
-    let done = 0, added = 0;
+    let done = 0, added = 0; ICU.lastNew = null;
     const queue = [...todo];
     const worker = async () => {
       while (queue.length) {
         const item = queue.shift();
-        try { const acts = await activityFromIcu(item); await saveActivities(acts); added += acts.length; }
+        try { const acts = await activityFromIcu(item); await saveActivities(acts); added += acts.length; if (acts[0] && (!ICU.lastNew || acts[0].start > ICU.lastNew.start)) ICU.lastNew = acts[0]; }
         catch (e) { if (/API-Key/.test(e.message)) throw e; console.warn('Aktivität übersprungen', item.id, e); }
         onProgress?.(++done, todo.length);
       }
@@ -149,7 +154,7 @@ const ICU = (() => {
     SET.lastSync = Date.now(); saveSettings(); recompute();
     return added;
   }
-  return { sync, test };
+  return { sync, test, lastNew: null };
 })();
 
 /* ---------- Synchronisation steuern ---------- */
@@ -161,7 +166,8 @@ async function runSync(manual) {
   try {
     const n = await ICU.sync((d, t) => { SYNC.msg = `Lade Einheiten ${d}/${t} …`; updateSyncBadge(); });
     SYNC.msg = '';
-    if (n || manual) toast(n ? `${n} neue Einheit${n === 1 ? '' : 'en'} von deiner Uhr` : 'Alles aktuell');
+    if (n) { const a = ICU.lastNew, h = a && hrSummary(a); toast(n === 1 && h ? `Neu: ${a.name} · Ø ${Math.round(h.avg)} bpm, max ${Math.round(h.max)}` : `${n} neue Einheit${n === 1 ? '' : 'en'} von deiner Uhr`); }
+    else if (manual) toast('Alles aktuell');
   } catch (e) { SYNC.msg = ''; toast(e.message); }
   SYNC.busy = false; render();
 }

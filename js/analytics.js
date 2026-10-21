@@ -86,6 +86,24 @@ function timeInZones(acts, zones, key) {
 }
 const zoneOf = hr => { const z = hrZones(); const i = z.findIndex(([, lo, hi]) => hr >= lo && hr < hi); return i < 0 ? 0 : i; };
 
+/* ---------- Herzfrequenz einer Einheit ---------- */
+function hrSummary(a) {
+  const s = (a.samples || []).filter(x => num(x.hr) && x.hr > 30);
+  if (!s.length && !num(a.avgHr)) return null;
+  const z = hrZones(), tz = s.length ? timeInZones([a], z, 'hr') : null;
+  const hrs = s.map(x => x.hr), half = s.length >> 1;
+  // HF-Drift: Anstieg 2. Hälfte vs. 1. Hälfte (ohne erste 10 min) bei vergleichbarer Belastung
+  const body = s.filter(x => x.t > 600), h = body.length >> 1;
+  const drift = body.length > 40 ? (mean(body.slice(h).map(x => x.hr)) - mean(body.slice(0, h).map(x => x.hr))) : null;
+  const above = s.length ? s.filter(x => x.hr >= P.lthr).length * DT : 0;
+  const peak = s.length ? s.reduce((b, x) => x.hr > b.hr ? x : b, s[0]) : null;
+  return { avg: s.length ? mean(hrs) : a.avgHr, max: s.length ? Math.max(...hrs) : a.maxHr, min: s.length ? Math.min(...hrs) : null, zones: tz, zoneNames: z, drift, above, peakAt: peak?.t ?? null, hasCurve: s.length > 5, dec: decoupling(a) };
+}
+function zoneBar(tz) {
+  const tot = tz.reduce((a, b) => a + b, 0) || 1;
+  return `<div class="zbar">${tz.map((t, i) => t > 0 ? `<i style="width:${t / tot * 100}%;background:${zc(i)}" title="Z${i + 1}: ${hm(t)}"></i>` : '').join('')}</div>`;
+}
+
 /* ---------- Bereitschaft ---------- */
 function readiness() {
   const w = WELL[WELL.length - 1];

@@ -127,6 +127,8 @@ button.tile:hover { transform: translateY(-2px) }
 .prow { display: flex; flex-direction: column; gap: 5px }
 .prow .top { display: flex; justify-content: space-between; gap: 8px; font-size: 13px }
 .prow .top span:last-child { color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap }
+.zbar { display: flex; height: 12px; border-radius: 6px; overflow: hidden; background: var(--surface2) }
+.zbar i { display: block; height: 100% }
 .bar { height: 7px; border-radius: 9px; background: var(--surface2); overflow: hidden }
 .bar i { display: block; height: 100%; border-radius: 9px; background: var(--c, var(--accent)) }
 

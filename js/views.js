@@ -24,6 +24,8 @@ function vDashboard() {
     (today.length ? today.map(p => `<div class="today" style="color:${isDone(p) ? 'var(--good)' : C[p.sport]}">${isDone(p) ? '✓ ' : ''}${esc(p.title)} · ${hm(p.min * 60)}</div>`).join('') : '<div class="today">Heute nichts geplant</div>') +
     `<div class="pills"><div class="pill"><b style="color:var(--fit)">${Math.round(LOAD.ctl)}</b><span>Fitness</span></div><div class="pill"><b style="color:var(--fat)">${Math.round(LOAD.atl)}</b><span>Ermüdung</span></div><div class="pill"><b style="color:var(--form)">${Math.round(LOAD.tsb)}</b><span>Form</span></div></div>` +
     `<span class="cap">Bereitschaft ${rd.src === 'Uhr' ? 'von deiner Uhr' : 'aus Schlaf, HRV und Belastung berechnet'}${rd.rec > 1 ? ` · Erholung noch ${Math.round(rd.rec)} h` : ''}</span></div></div></div>`;
+  const latest = ACTS[0];
+  if (latest && Date.now() - latest.start.getTime() < 48 * 3600 * 1000) h += latestCard(latest);
   h += `<div><div class="seg">${[['week', 'Woche'], ['month', 'Monat']].map(([k, l]) => `<button class="${S.period === k ? 'on' : ''}" data-act="period:${k}">${l}</button>`).join('')}</div></div>`;
   h += `<div class="tiles">` + SPORTS.map(s => { const t = totals(s, from, to), p = totals(s, pf, from), dl = p.dur ? (t.dur - p.dur) / p.dur * 100 : 0; return tile(NAME[s], s === 'swim' ? de(t.dist) : de(t.dist / 1000, s === 'bike' ? 0 : 1), s === 'swim' ? 'm' : 'km', `${t.n}× · ${hm(t.dur)}${p.dur ? ` · ${dl >= 0 ? '+' : ''}${Math.round(dl)} %` : ''}`, C[s], s, 'nav:' + s); }).join('') +
     (() => { const t = totals(null, from, to); return tile('Gesamt', hm(t.dur), '', `TSS ${Math.round(t.tss)} · ${t.n} Einheiten`, 'var(--accent)', 'sum'); })() + `</div>`;
@@ -56,6 +58,17 @@ function vDashboard() {
   h += `<div class="card"><h3>Trainingsempfehlungen</h3>${recs.length ? recs.map((r, i) => `<div class="ins"><span class="dot" style="background:${r.sport ? C[r.sport] : 'var(--accent)'}"></span><div style="display:flex;flex-direction:column;gap:6px;align-items:flex-start"><div><b>${r.t}</b><span>${r.d}</span></div>${r.w ? `<button class="btn small" data-act="accept:${i}">In Kalender übernehmen</button>` : ''}</div></div>`).join('') : '<span class="muted">Alles im grünen Bereich.</span>'}</div>`;
   h += `<div class="card"><h3>Letzte Einheiten</h3><div class="list">${ACTS.slice(0, 8).map(actRow).join('')}</div></div>`;
   return h;
+}
+
+function latestCard(a) {
+  const hs = hrSummary(a);
+  let h = `<button class="card" data-act="open:${a.id}" style="text-align:left;cursor:pointer"><h3>${icon(a.sport, 16, C[a.sport])} Neu von deiner Uhr <small>${shortDate(a.start)}, ${time(a.start)}</small></h3><b style="font-size:16px">${esc(a.name)} · ${hm(a.dur)}${a.dist ? ' · ' + (a.sport === 'swim' ? de(a.dist) + ' m' : km(a.dist)) : ''}</b>`;
+  if (hs) {
+    h += `<div class="pills"><div class="pill"><b style="color:var(--bad)">${Math.round(hs.avg)}</b><span>Ø HF</span></div><div class="pill"><b>${num(hs.max) ? Math.round(hs.max) : '–'}</b><span>max HF</span></div>${hs.hasCurve ? `<div class="pill"><b>${hm(hs.above)}</b><span>über Schwelle</span></div>` : ''}<div class="pill"><b style="color:var(--bike)">${Math.round(a.tss || 0)}</b><span>TSS</span></div></div>`;
+    if (hs.zones) h += zoneBar(hs.zones);
+    else h += `<span class="cap">${a.partial ? 'HF-Kurve wird beim nächsten Sync automatisch nachgeladen.' : 'Für diese Einheit hat die Uhr nur Durchschnittswerte gespeichert.'}</span>`;
+  } else h += `<span class="cap">Keine Herzfrequenz in dieser Einheit.</span>`;
+  return h + `</button>`;
 }
 
 /* ---------- Analyse-Übersicht (iPhone-Tab) ---------- */
@@ -261,7 +274,12 @@ function vActivity() {
   const a = byId(S.act), W = cw(false); if (!a) return header('Nicht gefunden', true);
   const sp = a.dur ? a.dist / a.dur : 0, paceVal = a.sport === 'bike' ? de(sp * 3.6, 1) : pv(a.sport === 'swim' ? 100 / sp : 1000 / sp), paceUnit = a.sport === 'bike' ? 'km/h' : a.sport === 'swim' ? '/100m' : '/km';
   let h = header(esc(a.name), true) + `<span class="muted">${dayTitle(a.start)}, ${time(a.start)} Uhr</span>`;
-  h += `<div class="tiles">${tile('Dauer', dur(a.dur), '', '', C[a.sport] || C.other, 'timer')}${a.dist ? tile('Distanz', a.sport === 'swim' ? de(a.dist) : de(a.dist / 1000, 2), a.sport === 'swim' ? 'm' : 'km', '', C[a.sport], a.sport) : ''}${a.dist ? tile(a.sport === 'bike' ? 'Geschwindigkeit' : 'Pace', paceVal, paceUnit, '', C[a.sport]) : ''}${num(a.avgHr) ? tile('Ø Herzfrequenz', Math.round(a.avgHr), 'bpm', num(a.maxHr) ? 'max ' + Math.round(a.maxHr) : '', 'var(--bad)', 'heart') : ''}${tile('TSS', Math.round(a.tss || 0), '', num(a.te) ? 'Aerober Trainingseffekt ' + de(a.te, 1) : '', 'var(--bike)')}${a.elev > 1 ? tile('Höhenmeter', de(a.elev), 'm', '', 'var(--muted)') : ''}</div>`;
+  h += `<div class="tiles">${tile('Dauer', dur(a.dur), '', '', C[a.sport] || C.other, 'timer')}${a.dist ? tile('Distanz', a.sport === 'swim' ? de(a.dist) : de(a.dist / 1000, 2), a.sport === 'swim' ? 'm' : 'km', '', C[a.sport], a.sport) : ''}${a.dist ? tile(a.sport === 'bike' ? 'Geschwindigkeit' : 'Pace', paceVal, paceUnit, '', C[a.sport]) : ''}${num(a.avgHr) && !hrSummary(a)?.hasCurve ? tile('Ø Herzfrequenz', Math.round(a.avgHr), 'bpm', num(a.maxHr) ? 'max ' + Math.round(a.maxHr) : '', 'var(--bad)', 'heart') : ''}${tile('TSS', Math.round(a.tss || 0), '', num(a.te) ? 'Aerober Trainingseffekt ' + de(a.te, 1) : '', 'var(--bike)')}${a.elev > 1 ? tile('Höhenmeter', de(a.elev), 'm', '', 'var(--muted)') : ''}</div>`;
+  const hs = hrSummary(a);
+  if (hs?.hasCurve) {
+    const tot = hs.zones.reduce((x, y) => x + y, 0) || 1, dom = hs.zones.indexOf(Math.max(...hs.zones));
+    h += `<div class="card"><h3>${icon('heart', 16, 'var(--bad)')} Herzfrequenz-Auswertung</h3><div class="tiles">${tile('Ø Herzfrequenz', Math.round(hs.avg), 'bpm', `Minimum ${Math.round(hs.min)}`, 'var(--bad)', 'heart')}${tile('Max. Herzfrequenz', Math.round(hs.max), 'bpm', `${Math.round(hs.max / P.maxHr * 100)} % deiner max. HF`, 'var(--bad)', 'heart')}${tile('Hauptzone', hs.zoneNames[dom][0].split(' ')[0], '', `${hs.zoneNames[dom][0].split(' ').slice(1).join(' ')} · ${Math.round(hs.zones[dom] / tot * 100)} %`, zc(dom))}${tile('Über Schwelle', hm(hs.above), '', `ab ${P.lthr} bpm`, 'var(--z5)')}${num(hs.drift) ? tile('HF-Drift', sgn(hs.drift, 1), 'bpm', '2. vs. 1. Hälfte', Math.abs(hs.drift) > 8 ? 'var(--warn)' : 'var(--good)') : ''}${num(hs.dec) && a.sport !== 'swim' ? tile('Entkopplung', sgn(hs.dec, 1), '%', hs.dec > 5 ? 'Tempo:HF driftet' : 'stabil', hs.dec > 5 ? 'var(--warn)' : 'var(--good)') : ''}</div>${zoneBar(hs.zones)}<div class="legend">${hs.zoneNames.map((z, i) => `<span><i style="background:${zc(i)}"></i>${z[0].split(' ')[0]} ${hm(hs.zones[i])}</span>`).join('')}</div></div>`;
+  } else if (a.partial) h += `<div class="card"><span class="cap">Die Herzfrequenz-Kurve dieser Einheit wird beim nächsten Sync automatisch nachgeladen.</span></div>`;
   const gps = (a.samples || []).filter(x => x.lat);
   if (gps.length > 5) h += `<div class="card"><h3>Strecke</h3>${trackSvg([{ pts: gps.map(x => [x.lat, x.lon]), color: C[a.sport] }], W, 240)}</div>`;
   const has = k => (a.samples || []).some(x => num(x[k]));
