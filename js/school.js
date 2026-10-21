@@ -154,6 +154,15 @@ function vSchool() {
   return h;
 }
 
+/* Zahl am App-Symbol (iPhone ab iOS 16.4, wenn Mitteilungen erlaubt): fällige Hausaufgaben bis morgen + Stundenplan-Änderungen heute/morgen */
+let lastBadge = -1;
+function updateBadge() {
+  if (!('setAppBadge' in navigator)) return;
+  const n = hwOpen().filter(h => h.dueD >= TODAY && h.dueD <= addDays(TODAY, 1)).length + (SCH.data ? schoolChanges(TODAY, addDays(TODAY, 2)).filter(l => l.code).length : 0);
+  if (n === lastBadge) return; lastBadge = n;
+  (n ? navigator.setAppBadge(n) : navigator.clearAppBadge()).catch(() => { });
+}
+
 /* ---------- Sheets ---------- */
 function lessonSheet() {
   const [d, s] = S.sheet.k.split('|'), l = lessonsOn(new Date(d + 'T00:00:00')).find(x => x.s === s); if (!l) return '';

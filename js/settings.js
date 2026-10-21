@@ -40,7 +40,7 @@ function vSettings() {
 
   // Kalender & Hinweise
   const perm = window.Notification?.permission;
-  h += `<div class="card"><h3>${icon('bell')} Kalender &amp; Hinweise</h3><span class="cap fg">Hinweise (z. B. „1 Tag vorher“) zeigt TriCoach, solange die App offen ist. Zuverlässig auch bei geschlossener App: im Kalender <b>„An Apple Kalender senden“</b> – dann erinnert dich Apple Kalender, inklusive Wiederholungen.</span>
+  h += `<div class="card"><h3>${icon('bell')} Kalender &amp; Hinweise</h3><span class="cap fg">Hinweise (z. B. „1 Tag vorher“) zeigt TriCoach, solange die App offen ist. Mit erlaubten Mitteilungen zeigt das App-Symbol außerdem eine Zahl: fällige Hausaufgaben bis morgen plus Entfall/Vertretung heute und morgen. Zuverlässig auch bei geschlossener App: im Kalender <b>„An Apple Kalender senden“</b> – dann erinnert dich Apple Kalender, inklusive Wiederholungen.</span>
     <div class="row" style="flex-wrap:wrap">${perm === 'granted' ? '<b class="good">✓ Mitteilungen erlaubt</b>' : `<button class="btn" data-act="notify">${icon('bell', 14)} Mitteilungen erlauben</button>`}<button class="btn" data-act="ics">${icon('share', 14)} An Apple Kalender senden</button></div>
     </div>`;
   h += siriSettingsCard();

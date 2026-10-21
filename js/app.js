@@ -30,6 +30,7 @@ function render() {
   catch (e) { console.error(e); c.innerHTML = header('Fehler') + `<div class="card">${empty('Diese Ansicht konnte nicht geladen werden', esc(e.message))}</div>`; }
   renderSheet();
   document.getElementById('fab').hidden = !!S.sheet || ['live', 'settings', 'pulse'].includes(S.view);
+  try { updateBadge(); } catch (e) { }
 }
 function renderSheet() {
   const el = document.getElementById('sheet'), was = el.dataset.open;
