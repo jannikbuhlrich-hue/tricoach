@@ -43,6 +43,8 @@ void main() {
 
     // Mein Tag
     expect(find.text('Heute'), findsWidgets);
+    // Je nach Schrift liegt die Karte unter dem sichtbaren Bereich → erst hinscrollen
+    await tester.scrollUntilVisible(find.text('Noch keine Einheiten'), 200, scrollable: find.byType(Scrollable).first);
     expect(find.text('Noch keine Einheiten'), findsOneWidget);
 
     // Eintragen: Schwimmen, 2,35 km in 50 min
