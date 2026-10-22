@@ -1,5 +1,6 @@
 # TriCoach 3 (Flutter + Supabase): prüft Backend und App bei jedem Push auf den Branch flutter-app.
-# Erzeugt beim ersten Lauf die Plattform-Ordner (iOS, Android, Web, Windows, macOS) und legt sie im Branch ab.
+# Jeder Lauf legt einen lesbaren Bericht in die Branches ci-bericht-app / ci-bericht-android
+# (Analyse, Tests, Build-Ausgabe) – praktisch, um Fehler ohne GitHub-Oberfläche nachzulesen.
 name: App (Flutter)
 on:
   push:
@@ -28,7 +29,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
       - name: Kalender-Datei (.ics) testen
         run: node supabase/tests/ics.test.mjs
       - name: Datenmodell + Zugriffsregeln testen
@@ -51,45 +52,49 @@ jobs:
         with:
           channel: stable
           cache: true
-      - run: flutter --version
-      - name: Plattform-Ordner erzeugen (nur beim ersten Mal)
-        run: |
-          if [ ! -d android ]; then
-            flutter create --org app.tricoach --project-name tricoach --platforms=android,ios,web,windows,macos .
-            cd ..
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add app/android app/ios app/web app/windows app/macos app/.metadata app/.gitignore 2>/dev/null || true
-            git commit -m "App: Plattform-Ordner erzeugt (flutter create)" && git push || echo "nichts zu committen"
-          fi
+      - run: mkdir -p ../ci-out && flutter --version | tee ../ci-out/0-flutter-version.txt
       - name: Pakete laden
-        run: flutter pub get || (flutter pub get -v | tail -80; exit 1)
-      - name: Paketstände (Info)
-        run: flutter pub outdated || true
+        run: flutter pub get 2>&1 | tee ../ci-out/1-pub-get.txt
+      - name: Paketstände
+        run: (flutter pub deps --style=compact; echo; flutter pub outdated) > ../ci-out/2-pakete.txt 2>&1 || true
       - name: Code prüfen
-        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+        id: analyze
+        continue-on-error: true
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings 2>&1 | tee ../ci-out/3-analyse.txt
       - name: Tests
-        run: flutter test --reporter expanded
+        id: test
+        continue-on-error: true
+        run: flutter test --reporter expanded 2>&1 | tee ../ci-out/4-tests.txt
       - name: Web-Version bauen
-        run: flutter build web --release --dart-define=SUPABASE_URL=${{ vars.SUPABASE_URL }} --dart-define=SUPABASE_ANON_KEY=${{ vars.SUPABASE_ANON_KEY }}
+        id: web
+        continue-on-error: true
+        run: flutter build web --release --dart-define=SUPABASE_URL=${{ vars.SUPABASE_URL }} --dart-define=SUPABASE_ANON_KEY=${{ vars.SUPABASE_ANON_KEY }} 2>&1 | tail -150 | tee ../ci-out/5-web-build.txt
       - uses: actions/upload-artifact@v4
+        if: steps.web.outcome == 'success'
         with:
           name: tricoach-web
           path: app/build/web
           retention-days: 14
+      - name: Bericht ablegen
+        if: always()
+        run: |
+          printf 'commit %s\nanalyse %s\ntests %s\nweb %s\n' "${{ github.sha }}" "${{ steps.analyze.outcome }}" "${{ steps.test.outcome }}" "${{ steps.web.outcome }}" > ../ci-out/status.txt
+          d=$(mktemp -d); cp -r ../ci-out/. "$d"; cd "$d"
+          git init -q && git add -A && git -c user.name=ci -c user.email=ci@tricoach.app commit -qm "App-Bericht ${{ github.sha }}"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" HEAD:refs/heads/ci-bericht-app
+      - name: Ergebnis
+        run: '[ "${{ steps.analyze.outcome }}" = success ] && [ "${{ steps.test.outcome }}" = success ] && [ "${{ steps.web.outcome }}" = success ]'
 
   android:
     name: Android (Test-App bauen)
     needs: app
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 45
     defaults:
       run:
         working-directory: app
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.ref }}
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -98,13 +103,26 @@ jobs:
         with:
           channel: stable
           cache: true
-      - name: Plattform-Ordner sicherstellen
-        run: '[ -d android ] || flutter create --org app.tricoach --project-name tricoach --platforms=android .'
       - run: flutter pub get
       - name: Android-App bauen (Debug-APK)
-        run: flutter build apk --debug --dart-define=SUPABASE_URL=${{ vars.SUPABASE_URL }} --dart-define=SUPABASE_ANON_KEY=${{ vars.SUPABASE_ANON_KEY }}
+        id: apk
+        continue-on-error: true
+        run: |
+          mkdir -p ../ci-out
+          flutter build apk --debug --dart-define=SUPABASE_URL=${{ vars.SUPABASE_URL }} --dart-define=SUPABASE_ANON_KEY=${{ vars.SUPABASE_ANON_KEY }} > ../ci-out/apk-build.txt 2>&1
       - uses: actions/upload-artifact@v4
+        if: steps.apk.outcome == 'success'
         with:
           name: tricoach-android-debug
           path: app/build/app/outputs/flutter-apk/app-debug.apk
           retention-days: 14
+      - name: Bericht ablegen
+        if: always()
+        run: |
+          printf 'commit %s\napk %s\n' "${{ github.sha }}" "${{ steps.apk.outcome }}" > ../ci-out/status.txt
+          tail -250 ../ci-out/apk-build.txt > ../ci-out/apk-build-ende.txt || true
+          d=$(mktemp -d); cp -r ../ci-out/. "$d"; cd "$d"
+          git init -q && git add -A && git -c user.name=ci -c user.email=ci@tricoach.app commit -qm "Android-Bericht ${{ github.sha }}"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" HEAD:refs/heads/ci-bericht-android
+      - name: Ergebnis
+        run: '[ "${{ steps.apk.outcome }}" = success ]'
