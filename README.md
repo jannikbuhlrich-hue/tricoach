@@ -14,6 +14,9 @@ Triathlon-App für die Garmin Forerunner 265 – läuft auf iPhone, iPad und PC 
 - **USB (PC):** Uhr anstecken, Ordner `GARMIN/Activity` wählen.
 - **Live-Puls:** Uhr auf „HF übertragen“, in TriCoach „Live-Puls“ → verbinden (Chrome/Edge/Android).
 
+## Neu in 2.6.3
+- Keine Schriften mehr von Google-Servern (Datenschutz): die App nutzt nur noch Schriften, die auf dem Gerät vorhanden sind.
+
 ## Neu in 2.6.2
 - **In TrainingPeaks nachtragen – alles auf einmal:** Hinweis in „Mein Tag“ und in den Einstellungen, wenn Einheiten in TrainingPeaks fehlen (eigene Einträge, per Siri eingetragene, auf Wunsch auch Uhr-Einheiten). Am PC/iPad: eine ZIP mit FIT-Dateien (Uhr-Einheiten als Originaldatei aus intervals.icu, geprüft mit dem Garmin FIT SDK) – alle zusammen auf den TrainingPeaks-Kalender ziehen. Am iPhone: alle Einheiten der letzten 7 Tage in einem Rutsch an Apple Health (Kurzbefehl im Listen-Modus).
 - Einstellungen wie „auf allen Geräten“ und Siri-Status bleiben jetzt auch nach dem Neustart gespeichert.
