@@ -254,6 +254,33 @@ class SettingsScreen extends StatelessWidget {
           },
         ),
         const SizedBox(height: 8),
+        FilledButton.tonalIcon(
+          icon: const Icon(Icons.watch_rounded),
+          label: const Text('FIT-Dateien importieren'),
+          onPressed: () async {
+            final res = await FilePicker.platform.pickFiles(type: FileType.any, allowMultiple: true, withData: true);
+            if (res == null) return;
+            final files = [
+              for (final f in res.files)
+                if (f.bytes != null && f.name.toLowerCase().endsWith('.fit')) (f.name, f.bytes!)
+            ];
+            if (files.isEmpty) {
+              if (context.mounted) showMsg(context, 'Keine .fit-Dateien ausgewählt');
+              return;
+            }
+            final r = await app.importFitFiles(files);
+            if (context.mounted) {
+              showMsg(context, r.added > 0
+                  ? '${r.added} Einheit${r.added == 1 ? '' : 'en'} importiert${r.known > 0 ? ', ${r.known} schon vorhanden' : ''}${r.broken > 0 ? ', ${r.broken} unlesbar' : ''}'
+                  : r.known > 0 ? 'Alle Dateien waren schon importiert' : 'Keine gültigen FIT-Dateien gefunden');
+            }
+          },
+        ),
+        Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Text('Von der Uhr per USB (Ordner GARMIN/Activity) oder aus Garmin Connect exportiert.', style: TextStyle(color: c.muted, fontSize: 12)),
+        ),
+        const SizedBox(height: 8),
         TextButton(
           onPressed: () async {
             if (await _confirm(context, 'Alles auf diesem Gerät löschen?', app.signedIn ? 'Im Account bleibt alles erhalten.' : 'Ohne Account sind die Daten danach weg.')) {

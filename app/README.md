@@ -15,11 +15,12 @@ Die bisherige Web-App (Ordner `../js`, `../index.html`) bleibt unverändert und 
 | Kalender-Sync | Eigener Kalender „TriCoach“ im Handy (Apple/Google), Abo-Link (.ics) für PC/Outlook/Google, .ics-Export |
 | Abgleich | Offline zuerst, Warteschlange, „neuere Änderung gewinnt“, Echtzeit zwischen Geräten |
 | Coach | Einladungscode, Trainer-Ansicht mit Ampel, Einheiten für Athleten planen |
-| Import | Sicherung aus der Web-App 2.x (Einheiten, Korrekturen, Kalender, Profil) – ohne Doppelte |
+| Import | Sicherung aus der Web-App 2.x (Einheiten, Korrekturen, Kalender, Profil) – ohne Doppelte; FIT-Dateien von der Uhr (USB/Garmin Connect) |
+| Export | Jede Einheit als FIT-Datei (byte-gleich mit der Web-App, die mit dem Garmin FIT SDK geprüft ist) – z. B. für TrainingPeaks |
 | Designs | Nacht, Gletscher, Asphalt, Nordsee |
 | Einführung | Einwilligung Gesundheitsdaten (DSGVO), Uhr, Kalender, Account |
 
-Noch offen (laut Plan später): FIT-Datei-Import, Schule (WebUntis) als Extra, Abos/Bezahlen, Siri.
+Noch offen (laut Plan später): TrainingPeaks über Apple Health, Schule (WebUntis) als Extra, Abos/Bezahlen, Siri.
 
 ## Ordner
 

@@ -1,9 +1,11 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:flutter/widgets.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config.dart';
+import '../core/fit.dart';
 import '../core/models.dart';
 import '../data/device_calendar_sync.dart';
 import '../data/health_import.dart';
@@ -257,6 +259,23 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
       _importing = false;
     }
     return added;
+  }
+
+  /// FIT-Dateien (z. B. per USB aus GARMIN/Activity oder aus Garmin Connect exportiert) übernehmen
+  Future<({int added, int known, int broken})> importFitFiles(List<(String, Uint8List)> files) async {
+    final found = <Activity>[];
+    var broken = 0;
+    for (final (name, bytes) in files) {
+      try {
+        found.addAll(activitiesFromFit(bytes, name.replaceAll(RegExp(r'\.fit$', caseSensitive: false), '')));
+      } catch (_) {
+        broken++;
+      }
+    }
+    final known = {for (final r in await store.all('activities')) '${r['id']}'};
+    final fresh = found.where((a) => !known.contains(a.id)).toList();
+    await repo.saveActivities(fresh);
+    return (added: fresh.length, known: found.length - fresh.length, broken: broken);
   }
 
   // ---------------- Kalender ----------------

@@ -46,13 +46,13 @@ unter den Einstellungen der Funktion **Verify JWT** ausschalten.
 
 ## 5. Zugangsdaten in GitHub hinterlegen
 
-**Project Settings → API**: dort stehen `Project URL` und der `anon public` Key.
-Der anon-Key ist öffentlich (er steckt in jeder App) – geschützt wird über die Zugriffsregeln in der Datenbank.
-Den **service_role**-Key niemals weitergeben oder in die App packen.
+**Project Settings → API Keys**: dort stehen `Project URL` und der **Publishable key** (bei älteren Projekten „anon public“).
+Dieser Schlüssel ist öffentlich (er steckt in jeder App) – geschützt wird über die Zugriffsregeln in der Datenbank.
+Den **Secret key** (früher service_role) niemals weitergeben oder in die App packen.
 
 Im GitHub-Repo: **Settings → Secrets and variables → Actions → Variables → New repository variable**
 - `SUPABASE_URL` = Project URL
-- `SUPABASE_ANON_KEY` = anon public Key
+- `SUPABASE_ANON_KEY` = Publishable key (bzw. anon public)
 
 Ab dem nächsten Push baut GitHub die App automatisch mit Server-Anbindung.
 

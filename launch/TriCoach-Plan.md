@@ -18,7 +18,7 @@ status: aktiv
 
 Claude hat die Claude-Aufgaben aus W0–W7 und die Texte aus W10–W11 vorgezogen. Code liegt im Branch **`flutter-app`** (deine Web-App auf `main` bleibt unverändert). GitHub baut und testet bei jedem Push automatisch.
 
-**Noch offen bei Claude:** FIT-Datei-Import · TrainingPeaks-Brücke · Schule-Modul · Abos (RevenueCat) · Store-Einreichung.
+**Noch offen bei Claude:** TrainingPeaks über Apple Health · Schule-Modul · Abos (RevenueCat) · Store-Einreichung.
 **Jetzt bei dir (Woche 0):** Supabase-Projekt anlegen (`supabase/EINRICHTEN.md`, ~20 min) · Eltern wegen Store-Konten fragen · Ideal-Kunde · Tester-Liste.
 
 ---
@@ -97,7 +97,7 @@ Claude hat die Claude-Aufgaben aus W0–W7 und die Texte aus W10–W11 vorgezoge
 
 ### Woche 3 (09.11. – 15.11.) – Uhr-Daten automatisch
 - [x] **Claude:** Apple Health (iOS) + Health Connect (Android): Einheiten mit Puls, Distanz, Dauer automatisch holen ✅ Code + Berechtigungen; Praxistest am Handy durch dich
-- [ ] **Claude:** intervals.icu-Anbindung übernehmen ✅ + FIT-Datei-Import (Decoder aus `fit.js` portieren) ⏳ offen
+- [x] **Claude:** intervals.icu-Anbindung übernehmen + FIT-Datei-Import (Decoder aus `fit.js` portieren) ✅ getestet mit Dateien der Web-App
 - [x] **Claude:** Doppelte Einheiten erkennen und zusammenführen ✅
 - [ ] **Du:** Garmin Connect → Apple Health / Health Connect freigeben, 1 Woche normal trainieren und prüfen, ob alles ankommt (1 h + nebenbei)
 **Zeit Du:** ~4 h
@@ -119,7 +119,7 @@ Claude hat die Claude-Aufgaben aus W0–W7 und die Texte aus W10–W11 vorgezoge
 ### Woche 6 (30.11. – 06.12.) – Coach-Funktion
 - [x] **Claude:** Trainer laden Athleten per Link ein, sehen deren Einheiten, tragen Plan-Einheiten ein ✅ per Einladungscode
 - [x] **Claude:** Trainer-Ansicht (alle Athleten auf einen Blick, Ampel: erledigt / verpasst) ✅
-- [ ] **Claude:** TrainingPeaks-Brücke: FIT-Export + Apple-Health-Weg (wie in der Web-App) ⏳ offen
+- [ ] **Claude:** TrainingPeaks-Brücke: FIT-Export ✅ (byte-gleich mit der Web-App) + Apple-Health-Weg ⏳ offen
 - [ ] **Du:** 30 min mit deiner Trainerin: Was braucht sie? Was nervt sie an TrainingPeaks? Notizen machen (1 h)
 **Zeit Du:** ~4 h
 

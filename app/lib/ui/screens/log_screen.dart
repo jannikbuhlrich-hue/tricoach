@@ -1,6 +1,8 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/analytics.dart';
+import '../../core/fit.dart';
 import '../../core/format.dart';
 import '../../core/models.dart';
 import '../../core/sport.dart';
@@ -189,6 +191,19 @@ class _LogScreenState extends State<LogScreen> {
       appBar: AppBar(
         title: Text(e != null ? 'Einheit bearbeiten' : 'Einheit eintragen'),
         actions: [
+          if (e != null)
+            IconButton(
+              tooltip: 'Als FIT-Datei speichern (z. B. für TrainingPeaks)',
+              icon: const Icon(Icons.ios_share_rounded),
+              onPressed: () async {
+                final w = AppScope.read(context).profile.weightKg;
+                await FilePicker.platform.saveFile(
+                  dialogTitle: 'FIT-Datei speichern',
+                  fileName: fitFileName(e!),
+                  bytes: buildFit(e!, kcalEstimate: (s, d, r) => estimateKcal(s, d, r, w)),
+                );
+              },
+            ),
           if (e != null) IconButton(tooltip: 'Löschen', icon: const Icon(Icons.delete_outline_rounded), onPressed: _delete),
           Padding(
             padding: const EdgeInsets.only(right: 8),
