@@ -1,0 +1,110 @@
+# TriCoach 3 (Flutter + Supabase): prüft Backend und App bei jedem Push auf den Branch flutter-app.
+# Erzeugt beim ersten Lauf die Plattform-Ordner (iOS, Android, Web, Windows, macOS) und legt sie im Branch ab.
+name: App (Flutter)
+on:
+  push:
+    branches: [flutter-app]
+    paths: ['app/**', 'supabase/**', '.github/workflows/app.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: app-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  backend:
+    name: Backend (Datenbank + Kalender)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Kalender-Datei (.ics) testen
+        run: node supabase/tests/ics.test.mjs
+      - name: Datenmodell + Zugriffsregeln testen
+        env:
+          PGHOST: localhost
+          PGUSER: postgres
+          PGPASSWORD: postgres
+        run: bash supabase/tests/run.sh
+
+  app:
+    name: App (analysieren, testen, Web bauen)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter --version
+      - name: Plattform-Ordner erzeugen (nur beim ersten Mal)
+        run: |
+          if [ ! -d android ]; then
+            flutter create --org app.tricoach --project-name tricoach --platforms=android,ios,web,windows,macos .
+            cd ..
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add app/android app/ios app/web app/windows app/macos app/.metadata app/.gitignore 2>/dev/null || true
+            git commit -m "App: Plattform-Ordner erzeugt (flutter create)" && git push || echo "nichts zu committen"
+          fi
+      - name: Pakete laden
+        run: flutter pub get || (flutter pub get -v | tail -80; exit 1)
+      - name: Paketstände (Info)
+        run: flutter pub outdated || true
+      - name: Code prüfen
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+      - name: Tests
+        run: flutter test --reporter expanded
+      - name: Web-Version bauen
+        run: flutter build web --release --dart-define=SUPABASE_URL=${{ vars.SUPABASE_URL }} --dart-define=SUPABASE_ANON_KEY=${{ vars.SUPABASE_ANON_KEY }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tricoach-web
+          path: app/build/web
+          retention-days: 14
+
+  android:
+    name: Android (Test-App bauen)
+    needs: app
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Plattform-Ordner sicherstellen
+        run: '[ -d android ] || flutter create --org app.tricoach --project-name tricoach --platforms=android .'
+      - run: flutter pub get
+      - name: Android-App bauen (Debug-APK)
+        run: flutter build apk --debug --dart-define=SUPABASE_URL=${{ vars.SUPABASE_URL }} --dart-define=SUPABASE_ANON_KEY=${{ vars.SUPABASE_ANON_KEY }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tricoach-android-debug
+          path: app/build/app/outputs/flutter-apk/app-debug.apk
+          retention-days: 14

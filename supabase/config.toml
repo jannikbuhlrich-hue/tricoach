@@ -1,0 +1,4 @@
+# Nur die Abweichungen von den Supabase-Standardwerten.
+# Kalender-Apps können sich nicht anmelden – der Kalender-Link schützt sich über seinen geheimen Token.
+[functions.calendar]
+verify_jwt = false
