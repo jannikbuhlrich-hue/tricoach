@@ -9,8 +9,7 @@
   --fit: #5a8cff; --fat: #f2598c; --form: #ffcc33; --sleep: #8f7bff;
   --good: #3ccf74; --warn: #ffb020; --bad: #ff5a5a;
   --z1: #7b8194; --z2: #3d8bff; --z3: #3ccf74; --z4: #ffcc33; --z5: #ff8a3d; --z6: #ff5a5a; --z7: #b36bff;
-  /* Keine Schriften von Google-Servern (DSGVO) – nur, was auf dem Gerät schon da ist */
-  --num: "Barlow Semi Condensed", "Bahnschrift SemiCondensed", "Bahnschrift", "Roboto Condensed", "SF Pro Display", "Segoe UI", system-ui, sans-serif;
+  --num: "Barlow Semi Condensed", "Segoe UI", system-ui, sans-serif;
   --ui: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, Roboto, sans-serif;
   --r: 18px; --tile-r: 18px; --label-tt: none; --label-ls: 0;
   --card-shadow: none; --card-border: 1px solid var(--line);
