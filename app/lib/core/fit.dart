@@ -40,9 +40,20 @@ class FitMessage {
   final Map<int, int> v;
 }
 
-/// Alle Nachrichten einer FIT-Datei (nur Ganzzahl-Felder, ungültige Werte entfernt)
+/// Alle Nachrichten einer FIT-Datei (nur Ganzzahl-Felder, ungültige Werte entfernt).
+/// Kaputte oder abgeschnittene Dateien ergeben immer eine FitException, nie einen Absturz.
 List<FitMessage> decodeFit(Uint8List b) {
   if (!isFit(b)) throw FitException('Keine FIT-Datei');
+  try {
+    return _decode(b);
+  } on FitException {
+    rethrow;
+  } on RangeError {
+    throw FitException('Datei abgeschnitten');
+  }
+}
+
+List<FitMessage> _decode(Uint8List b) {
   final dv = ByteData.sublistView(b);
   final hs = b[0];
   final end = (hs + dv.getUint32(4, Endian.little)).clamp(0, b.length);
