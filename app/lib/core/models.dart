@@ -92,6 +92,7 @@ class Activity {
     String? notes,
     SwimWhere? swimWhere,
     List<Exercise>? exercises,
+    Map<String, dynamic>? details,
     DateTime? deletedAt,
     bool clearDeleted = false,
   }) =>
@@ -113,7 +114,7 @@ class Activity {
         exercises: exercises ?? this.exercises,
         source: source,
         extId: extId,
-        details: details,
+        details: details ?? this.details,
         updatedAt: DateTime.now().toUtc(),
         deletedAt: clearDeleted ? null : (deletedAt ?? this.deletedAt),
       );

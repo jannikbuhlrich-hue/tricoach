@@ -15,6 +15,7 @@ import '../theme.dart';
 import '../widgets.dart';
 import 'coach_screen.dart';
 import 'login_screen.dart';
+import 'tp_export_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -32,8 +33,6 @@ class SettingsScreen extends StatelessWidget {
           _watch(context, app, c),
           const SizedBox(height: 12),
           _calendar(context, app, c),
-          const SizedBox(height: 12),
-          const _FeedsCard(),
           const SizedBox(height: 12),
           TriCard(
             title: 'Design',
@@ -64,6 +63,8 @@ class SettingsScreen extends StatelessWidget {
               ),
             ]),
           ),
+          const SizedBox(height: 12),
+          const _FeedsCard(),
           const SizedBox(height: 12),
           _data(context, app, c),
           const SizedBox(height: 12),
@@ -508,6 +509,18 @@ class _FeedsCardState extends State<_FeedsCard> {
               label: const Text('Jetzt holen'),
             ),
         ]),
+        const SizedBox(height: 4),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            onPressed: () => openTpExport(context),
+            icon: const Icon(Icons.upload_rounded),
+            label: Text(() {
+              final n = app.tpMissing(30).length;
+              return n > 0 ? 'In TrainingPeaks nachtragen ($n fehlen)' : 'In TrainingPeaks nachtragen';
+            }()),
+          ),
+        ),
         if (app.tcKey.isNotEmpty) ...[
           const SizedBox(height: 6),
           Text(line('Schule', app.school?.at, app.schoolError), style: TextStyle(color: app.schoolError != null ? c.warn : c.muted, fontSize: 12)),

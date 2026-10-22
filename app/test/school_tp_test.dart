@@ -3,11 +3,13 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tricoach/core/backup_import.dart';
+import 'package:tricoach/data/health_import.dart';
 import 'package:tricoach/core/models.dart';
 import 'package:tricoach/core/school.dart';
 import 'package:tricoach/core/sport.dart';
 import 'package:tricoach/core/tc_crypto.dart';
 import 'package:tricoach/core/tp_plan.dart';
+import 'package:tricoach/core/zip.dart';
 import 'package:tricoach/data/local_store.dart';
 import 'package:tricoach/data/repository.dart';
 import 'package:tricoach/state/app_state.dart';
@@ -177,6 +179,42 @@ void main() {
       final r2 = await repo.importTpPlan(tpPlanFromIcs(tpIcs(withBike: false)), r1.ids, now: now);
       expect(r2.removed, 0);
       expect(repo.planned.where((p) => p.sport == Sport.bike).length, 1);
+    });
+  });
+
+  group('In TrainingPeaks nachtragen', () {
+    test('ZIP: Prüfsumme und Aufbau', () {
+      expect(crc32(utf8.encode('123456789')), 0xCBF43926);
+      final z = makeZip([('Lauf.fit', [1, 2, 3]), ('Schwimmen-Ä.fit', List.filled(300, 7))], at: DateTime(2026, 10, 22, 16, 30));
+      expect(z.sublist(0, 4), [0x50, 0x4b, 0x03, 0x04]);
+      final end = z.sublist(z.length - 22);
+      expect(end.sublist(0, 4), [0x50, 0x4b, 0x05, 0x06]);
+      expect(end[10], 2); // zwei Dateien
+      final cdSize = end[12] | end[13] << 8, cdOff = end[16] | end[17] << 8;
+      expect(cdOff + cdSize, z.length - 22);
+    });
+
+    test('fehlend = eigene Einträge ohne Haken; Uhr nur ohne Garmin-Verbindung', () async {
+      final state = AppState(MemoryStore());
+      await state.repo.load();
+      final now = DateTime.now();
+      await state.repo.saveActivities([
+        Activity(id: 'm1', sport: Sport.run, start: now.subtract(const Duration(days: 1)).toUtc(), durationS: 2700),
+        Activity(id: 'w1', sport: Sport.bike, start: now.subtract(const Duration(days: 2)).toUtc(), durationS: 3600, source: 'health'),
+      ]);
+      expect(state.tpMissing(7).map((a) => a.id), ['m1']);
+      state.garminTp = false;
+      expect(state.tpMissing(7).map((a) => a.id).toSet(), {'m1', 'w1'});
+      await state.markTp(state.tpMissing(7), 'fit');
+      expect(state.tpMissing(7), isEmpty);
+      expect(state.activities.firstWhere((a) => a.id == 'w1').details?['tp'], 'fit');
+      final z = state.tpZip([state.activities.first]);
+      expect(z.sublist(0, 4), [0x50, 0x4b, 0x03, 0x04]);
+    });
+
+    test('selbst nach Apple Health geschriebene Einheiten kommen nicht doppelt zurück', () {
+      expect(HealthImport.isOwnSource('app.tricoach.tricoach', 'TriCoach'), isTrue);
+      expect(HealthImport.isOwnSource('com.garmin.connect.mobile', 'Connect'), isFalse);
     });
   });
 }

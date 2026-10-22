@@ -52,6 +52,8 @@ class HealthImport {
     for (final p in _health.removeDuplicates(workouts)) {
       final v = p.value;
       if (v is! WorkoutHealthValue) continue;
+      // Selbst geschriebene Einheiten (für TrainingPeaks) nicht als Uhr-Einheit zurückholen – sonst doppelt
+      if (isOwnSource(p.sourceId, p.sourceName)) continue;
       final start = p.dateFrom, stop = p.dateTo;
       final dur = stop.difference(start).inSeconds;
       if (dur < 60) continue;
@@ -84,6 +86,41 @@ class HealthImport {
     }
     return out;
   }
+
+  /// Stammt ein Eintrag aus TriCoach selbst? (Bundle-ID app.tricoach.…, Name „TriCoach“)
+  static bool isOwnSource(String sourceId, String sourceName) =>
+      sourceId.toLowerCase().startsWith('app.tricoach') || sourceName.trim().toLowerCase() == 'tricoach';
+
+  /// Schreibrecht für Workouts holen (nur fürs Nachtragen in TrainingPeaks über Apple Health)
+  Future<bool> requestWrite() async {
+    if (!supported) return false;
+    await _configure();
+    return _health.requestAuthorization(const [HealthDataType.WORKOUT], permissions: const [HealthDataAccess.READ_WRITE]);
+  }
+
+  /// Eigene Einheit als Workout in Apple Health / Health Connect eintragen.
+  /// TrainingPeaks übernimmt Health-Workouts der letzten 7 Tage automatisch.
+  Future<bool> writeWorkout(Activity a, {int? kcal}) async {
+    if (!supported) return false;
+    await _configure();
+    final start = a.start.toLocal(), end = start.add(Duration(seconds: a.durationS < 60 ? 60 : a.durationS));
+    return _health.writeWorkoutData(
+      activityType: workoutType(a.sport),
+      start: start,
+      end: end,
+      totalEnergyBurned: a.kcal ?? kcal,
+      totalDistance: a.distanceM > 0 ? a.distanceM.round() : null,
+      title: a.name.isNotEmpty ? a.name : a.sport.label,
+    );
+  }
+
+  static HealthWorkoutActivityType workoutType(Sport s) => switch (s) {
+        Sport.swim => HealthWorkoutActivityType.SWIMMING,
+        Sport.bike => HealthWorkoutActivityType.BIKING,
+        Sport.run => HealthWorkoutActivityType.RUNNING,
+        Sport.strength => defaultTargetPlatform == TargetPlatform.iOS ? HealthWorkoutActivityType.TRADITIONAL_STRENGTH_TRAINING : HealthWorkoutActivityType.STRENGTH_TRAINING,
+        Sport.other => HealthWorkoutActivityType.OTHER,
+      };
 
   /// Workout-Typ aus Apple Health / Health Connect → Sportart
   static Sport sportFor(String type) {

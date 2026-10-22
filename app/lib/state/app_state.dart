@@ -7,12 +7,14 @@ import 'package:http/http.dart' show ClientException;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config.dart';
+import '../core/analytics.dart' show estimateKcal;
 import '../core/fit.dart';
 import '../core/format.dart';
 import '../core/models.dart';
 import '../core/school.dart';
 import '../core/tc_crypto.dart';
 import '../core/tp_plan.dart';
+import '../core/zip.dart';
 import '../data/device_calendar_sync.dart';
 import '../data/github_feeds.dart';
 import '../data/health_import.dart';
@@ -59,6 +61,9 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
   String? tpError;
   bool feedsBusy = false;
   DateTime? _lastFeeds;
+
+  /// Garmin Connect ist mit TrainingPeaks verbunden → Uhr-Einheiten kommen dort von selbst an
+  bool garminTp = true;
 
   SupabaseRemote? _remote;
   RealtimeChannel? _channel;
@@ -318,6 +323,7 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
     if (hw is Map) hwDone = {for (final e in hw.entries) '${e.key}': e.value == true};
     final at = await store.meta('tp:at') as String?;
     tpAt = at == null ? null : DateTime.tryParse(at);
+    garminTp = (await store.meta('tp:garmin')) != false;
   }
 
   void _resetFeeds() {
@@ -439,6 +445,54 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
     hwDone['u${h.id}'] = !s.isDone(h, hwDone);
     await store.setMeta('hw:done', Map<String, Object?>.from(hwDone));
     notifyListeners();
+  }
+
+  // ---------------- In TrainingPeaks nachtragen ----------------
+  /// Was in TrainingPeaks fehlt: eigene Einträge ohne Haken – und, wenn Garmin Connect NICHT mit
+  /// TrainingPeaks verbunden ist, auch die Uhr-Einheiten (wie tpMissing() in js/tp.js)
+  List<Activity> tpMissing(int days, {DateTime? now}) {
+    final n = now ?? DateTime.now(), from = startOfDay(n).subtract(Duration(days: days));
+    return activities
+        .where((a) => a.details?['tp'] == null && !a.start.isBefore(from) && !a.start.isAfter(n) && (a.isManual || (!garminTp && a.source != 'demo')))
+        .toList();
+  }
+
+  Future<void> setGarminTp(bool connected) async {
+    garminTp = connected;
+    await store.setMeta('tp:garmin', connected);
+    notifyListeners();
+  }
+
+  /// Merken, dass die Einheiten in TrainingPeaks sind (wird mit dem Account auf alle Geräte übertragen)
+  Future<void> markTp(List<Activity> list, String how) async {
+    final at = DateTime.now().toUtc().toIso8601String();
+    await repo.saveActivities([for (final a in list) a.copyWith(details: {...?a.details, 'tp': how, 'tpAt': at})]);
+  }
+
+  /// ZIP mit einer FIT-Datei je Einheit – in TrainingPeaks alle zusammen auf den Kalender ziehen
+  Uint8List tpZip(List<Activity> list) {
+    final used = <String>{}, files = <(String, List<int>)>[];
+    for (final a in list) {
+      var n = fitFileName(a);
+      while (used.contains(n)) {
+        n = n.replaceFirst(RegExp(r'\.fit$'), '-2.fit');
+      }
+      used.add(n);
+      files.add((n, buildFit(a, kcalEstimate: (s, d, r) => estimateKcal(s, d, r, profile.weightKg))));
+    }
+    return makeZip(files);
+  }
+
+  /// Einheiten der letzten 7 Tage an Apple Health – TrainingPeaks holt sie von dort
+  Future<int> tpToHealth(List<Activity> list) async {
+    if (!await health.requestWrite()) throw Exception('Kein Schreibzugriff auf Apple Health – in Einstellungen → Health → TriCoach erlauben.');
+    final week = DateTime.now().subtract(const Duration(days: 7));
+    final sent = <Activity>[];
+    for (final a in list.where((a) => a.start.isAfter(week))) {
+      if (await health.writeWorkout(a, kcal: estimateKcal(a.sport, a.durationS, a.rpe, profile.weightKg))) sent.add(a);
+    }
+    await markTp(sent, 'health');
+    return sent.length;
   }
 
   // ---------------- Kalender ----------------

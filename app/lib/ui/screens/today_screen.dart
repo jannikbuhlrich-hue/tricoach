@@ -10,6 +10,7 @@ import '../theme.dart';
 import '../widgets.dart';
 import 'log_screen.dart';
 import 'plan_editor.dart';
+import 'tp_export_screen.dart';
 
 /// „Mein Tag“: was heute ansteht, was erledigt ist, Form und Wochenziel auf einen Blick.
 /// Ab 17 Uhr rückt (wie in der Web-App) zusätzlich der nächste Tag nach oben.
@@ -65,6 +66,18 @@ class TodayScreen extends StatelessWidget {
             if (evening) ...[dayCard(tomorrow, 'Morgen'), const SizedBox(height: 12)],
             dayCard(today, 'Heute'),
             const SizedBox(height: 12),
+            if (app.tpMissing(7).isNotEmpty) ...[
+              Card(
+                child: ListTile(
+                  leading: Icon(Icons.upload_rounded, color: c.warn),
+                  title: Text(app.tpMissing(7).length == 1 ? '1 Einheit fehlt in TrainingPeaks' : '${app.tpMissing(7).length} Einheiten fehlen in TrainingPeaks'),
+                  subtitle: const Text('Deine Trainerin sieht sie erst nach dem Nachtragen'),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: () => openTpExport(context),
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
             if (app.school != null || app.schoolError != null) ...[
               SchoolCard(day: evening ? tomorrow : today, title: evening ? 'Schule morgen' : 'Schule heute'),
               const SizedBox(height: 12),
