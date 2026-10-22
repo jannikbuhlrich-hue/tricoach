@@ -1,0 +1,46 @@
+name: tricoach
+description: TriCoach – Triathlon-Training auf iPhone, Android, Web und PC. Ein Account, alles synchron.
+publish_to: 'none'
+version: 3.0.0+1
+
+environment:
+  sdk: '>=3.5.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  intl: any
+  supabase_flutter: ^2.8.0
+  sembast: ^3.8.0
+  sembast_web: ^2.4.0
+  path_provider: ^2.1.4
+  path: ^1.9.0
+  http: ^1.2.0
+  uuid: ^4.5.0
+  file_picker: ^10.0.0
+  health: ^13.0.0
+  device_calendar: ^4.3.2
+  timezone: any
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/fonts/OFL.txt
+  # Roboto liegt in der App (statt von Google-Servern geladen) – Teilmenge der Google-Fonts-Ausgabe, Lizenz: SIL OFL 1.1
+  fonts:
+    - family: Roboto
+      fonts:
+        - asset: assets/fonts/Roboto-Regular.ttf
+        - asset: assets/fonts/Roboto-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Roboto-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Roboto-Bold.ttf
+          weight: 700
