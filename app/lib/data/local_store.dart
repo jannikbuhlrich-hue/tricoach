@@ -1,4 +1,3 @@
-import 'package:sembast/sembast.dart';
 import 'package:sembast/sembast_memory.dart';
 
 import 'db_open_io.dart' if (dart.library.js_interop) 'db_open_web.dart';

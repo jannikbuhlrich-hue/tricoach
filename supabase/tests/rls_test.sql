@@ -69,5 +69,10 @@ do $$ begin
   insert into planned_sessions (id,athlete_id,created_by,title,starts_at) values ('p2','00000000-0000-0000-0000-00000000000a','00000000-0000-0000-0000-00000000000f','x',now());
   raise exception 'FEHLER: fremder Plan erlaubt';
 exception when insufficient_privilege then raise notice 'OK  fremder Plan blockiert'; end $$;
+-- Kalender-Link erneuern
+set request.jwt.claim.sub = '00000000-0000-0000-0000-00000000000a';
+select calendar_token as alt from profiles where id = auth.uid() \gset
+select rotate_calendar_token() <> :'alt'::uuid as rotiert \gset
+\if :rotiert \echo 'OK  Kalender-Link erneuert' \else \echo 'FEHLER Kalender-Link' \quit \endif
 reset role;
 \echo 'ALLE DATENBANK-TESTS BESTANDEN'

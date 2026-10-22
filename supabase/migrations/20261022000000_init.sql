@@ -144,6 +144,12 @@ begin
   return inv.coach_id;
 end $$;
 
+-- Neuer Kalender-Link: alter Link funktioniert danach nicht mehr
+create or replace function public.rotate_calendar_token()
+returns uuid language sql security invoker set search_path = public as $$
+  update public.profiles set calendar_token = gen_random_uuid() where id = auth.uid() returning calendar_token;
+$$;
+
 -- ---------------------------------------------------------------------------
 -- Zeitstempel: updated_at kommt vom Gerät ("letzte Änderung gewinnt"), synced_at vom Server
 -- ---------------------------------------------------------------------------
