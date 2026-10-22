@@ -77,10 +77,13 @@ void main() {
     tester.view.devicePixelRatio = 2;
     addTearDown(tester.view.reset);
 
-    final store = MemoryStore();
-    await store.setMeta('onboarded', true);
-    final state = AppState(store);
+    // Zustand komplett im echten Zeitablauf anlegen (nicht in der Test-Zeit),
+    // sonst warten Speicher-Aufrufe auf Mikrotasks der angehaltenen Test-Uhr
+    late final AppState state;
     await tester.runAsync(() async {
+      final store = MemoryStore();
+      await store.setMeta('onboarded', true);
+      state = AppState(store);
       await state.init();
       final now = DateTime.now();
       await state.repo.saveActivities([
