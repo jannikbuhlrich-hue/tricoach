@@ -515,7 +515,7 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
 
   /// Einheiten der letzten 7 Tage an Apple Health – TrainingPeaks holt sie von dort
   Future<int> tpToHealth(List<Activity> list) async {
-    if (!await health.requestWrite()) throw Exception('Kein Schreibzugriff auf Apple Health – in Einstellungen → Health → TriCoach erlauben.');
+    if (!await health.requestWrite()) throw Exception('Kein Schreibzugriff auf Apple Health – in Einstellungen › Health › TriCoach erlauben.');
     final week = DateTime.now().subtract(const Duration(days: 7));
     final sent = <Activity>[];
     for (final a in list.where((a) => a.start.isAfter(week))) {

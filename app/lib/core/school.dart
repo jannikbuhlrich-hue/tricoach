@@ -60,11 +60,11 @@ class Lesson {
   DateTime get startsAt => lessonTime(day, start);
   DateTime get endsAt => lessonTime(day, end);
 
-  /// Kurztext der Änderung, z. B. „Entfall · Aufgaben im Moodle-Kurs“ oder „Vertretung · Raum R 110 → R 204“
+  /// Kurztext der Änderung, z. B. „Entfall · Aufgaben im Moodle-Kurs“ oder „Vertretung · Raum R 204 statt R 110“
   String get note => [
         if (cancelled) 'Entfall' else if (irregular) (subst.isNotEmpty ? subst : 'Änderung') else if (subst.isNotEmpty) subst,
-        if (roOrg.isNotEmpty) 'Raum $roOrg → $ro',
-        if (teOrg.isNotEmpty) '$teOrg → $te',
+        if (roOrg.isNotEmpty) 'Raum $ro statt $roOrg',
+        if (teOrg.isNotEmpty) '$te statt $teOrg',
         if (info.isNotEmpty) info,
       ].join(' · ');
 

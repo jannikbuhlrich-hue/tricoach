@@ -158,9 +158,9 @@ class _UntisConnectScreenState extends State<UntisConnectScreen> {
               Text('Meldest du dich bei WebUntis mit Microsoft, IServ o. Ä. an? Dann so:', style: TextStyle(color: c.fg, fontWeight: FontWeight.w600)),
               const SizedBox(height: 6),
               Text('1. WebUntis im Browser öffnen und anmelden\n'
-                  '2. Oben rechts auf dein Profil → Reiter „Freigaben“\n'
-                  '3. Bei „Zugriff über Untis Mobile“ auf „Anzeigen“ → Link bzw. Daten kopieren\n'
-                  '4. Hier einfügen → Verbinden',
+                  '2. Oben rechts auf dein Profil › Reiter „Freigaben“\n'
+                  '3. Bei „Zugriff über Untis Mobile“ auf „Anzeigen“ › Link bzw. Daten kopieren\n'
+                  '4. Hier einfügen › Verbinden',
                   style: TextStyle(color: c.muted, height: 1.4)),
               const SizedBox(height: 12),
               TextField(
@@ -236,9 +236,9 @@ class _TpConnectScreenState extends State<TpConnectScreen> {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 520),
           child: ListView(padding: const EdgeInsets.all(16), children: [
-            Text('1. app.trainingpeaks.com öffnen → Einstellungen (Zahnrad) → „Calendar“\n'
+            Text('1. app.trainingpeaks.com öffnen › Einstellungen (Zahnrad) › „Calendar“\n'
                 '2. Bei „iCal Calendar Feeds“ den Link kopieren\n'
-                '3. Hier einfügen → Verbinden',
+                '3. Hier einfügen › Verbinden',
                 style: TextStyle(color: c.muted, height: 1.4)),
             const SizedBox(height: 6),
             Text('Geplante Einheiten, Änderungen und Löschungen deines Trainers landen dann automatisch in TriCoach.', style: TextStyle(color: c.muted, fontSize: 12)),

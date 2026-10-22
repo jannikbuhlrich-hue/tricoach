@@ -66,7 +66,7 @@ void main() {
       expect(ls.length, 3);
       expect((ls[0].start, ls[0].end), ('07:45', '09:15'));
       expect(s.subjectName(ls[0].su, ls[0].sul), 'Mathe'); // „MatL1“ → Mathe
-      expect(ls[1].note, 'Vertretung · Raum R 110 → R 204 · BEC → MÜL');
+      expect(ls[1].note, 'Vertretung · Raum R 204 statt R 110 · MÜL statt BEC');
       expect(ls[2].cancelled, isTrue);
       expect(ls[2].note, 'Entfall · Aufgaben im Moodle-Kurs');
       expect(s.changes(DateTime(2026, 10, 26), DateTime(2026, 10, 27)).length, 2);

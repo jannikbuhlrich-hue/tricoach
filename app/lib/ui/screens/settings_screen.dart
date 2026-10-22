@@ -212,7 +212,7 @@ class SettingsScreen extends StatelessWidget {
             OutlinedButton.icon(
               onPressed: () async {
                 await Clipboard.setData(ClipboardData(text: AppConfig.calendarFeedUrl(token)));
-                if (context.mounted) showMsg(context, 'Link kopiert – in Google Kalender: „Andere Kalender → Per URL“ einfügen.');
+                if (context.mounted) showMsg(context, 'Link kopiert – in Google Kalender: „Andere Kalender › Per URL“ einfügen.');
               },
               icon: const Icon(Icons.copy_rounded),
               label: const Text('Link kopieren'),
@@ -249,7 +249,7 @@ class SettingsScreen extends StatelessWidget {
       title: 'Daten',
       icon: Icons.storage_rounded,
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('Sicherung aus der bisherigen TriCoach-Web-App übernehmen (Einstellungen → „Daten sichern“). Doppelte Einträge entstehen nicht.', style: TextStyle(color: c.muted)),
+        Text('Sicherung aus der bisherigen TriCoach-Web-App übernehmen (Einstellungen › „Daten sichern“). Doppelte Einträge entstehen nicht.', style: TextStyle(color: c.muted)),
         const SizedBox(height: 8),
         FilledButton.tonalIcon(
           icon: const Icon(Icons.upload_file_rounded),
@@ -347,7 +347,7 @@ class _IcuFieldState extends State<_IcuField> {
         child: TextField(
           controller: ctl,
           obscureText: true,
-          decoration: const InputDecoration(labelText: 'intervals.icu API-Key', hintText: 'intervals.icu → Settings → Developer'),
+          decoration: const InputDecoration(labelText: 'intervals.icu API-Key', hintText: 'intervals.icu › Settings › Developer'),
         ),
       ),
       const SizedBox(width: 8),

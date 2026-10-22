@@ -101,7 +101,7 @@ class _CoachScreenState extends State<CoachScreen> {
                         IconButton(
                           tooltip: 'Kopieren',
                           icon: const Icon(Icons.copy_rounded),
-                          onPressed: () => Clipboard.setData(ClipboardData(text: 'Verbinde dich mit mir in TriCoach: Einstellungen → Coach → Code $myCode')),
+                          onPressed: () => Clipboard.setData(ClipboardData(text: 'Verbinde dich mit mir in TriCoach: Einstellungen › Coach › Code $myCode')),
                         ),
                       ]),
                     FilledButton.tonal(

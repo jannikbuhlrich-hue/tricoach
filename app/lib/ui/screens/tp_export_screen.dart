@@ -94,7 +94,7 @@ class _TpExportScreenState extends State<TpExportScreen> {
             icon: Icons.folder_zip_rounded,
             child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
               Text('1. ZIP speichern (${chosen.length} FIT-Datei${chosen.length == 1 ? '' : 'en'}) und entpacken.\n'
-                  '2. app.trainingpeaks.com → Kalender: alle .fit-Dateien markieren und zusammen auf den Kalender ziehen. '
+                  '2. app.trainingpeaks.com › Kalender: alle .fit-Dateien markieren und zusammen auf den Kalender ziehen. '
                   'Jede landet am richtigen Tag und wird mit der geplanten Einheit verbunden; schon vorhandene überspringt TrainingPeaks.'),
               const SizedBox(height: 8),
               FilledButton.icon(

@@ -79,7 +79,7 @@ class LegalScreen extends StatelessWidget {
                 p('Deine Daten liegen auf deinem Gerät und – mit Account – auf Servern in der EU (Supabase, Irland). Übertragung immer verschlüsselt.'),
                 p('Keine Werbung, kein Tracking, keine Weitergabe. Die App lädt nichts von Google-Servern (Schriften und Programmteile sind eingebaut).'),
                 p('Gesundheitsdaten (z. B. Puls) verarbeitet TriCoach nur mit deiner Einwilligung aus der Einführung. '
-                    'Du kannst Verbindungen jederzeit trennen und deinen Account samt allen Daten unter Einstellungen → Account löschen.'),
+                    'Du kannst Verbindungen jederzeit trennen und deinen Account samt allen Daten unter Einstellungen › Account löschen.'),
               ]),
             ),
           ]),
