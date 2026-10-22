@@ -111,6 +111,8 @@ function vToday() {
     ${tile('Training', train.filter(p => p.kind === 'workout').length + done.length ? `${done.length}/${Math.max(done.length, train.filter(p => p.kind === 'workout').length)}` : '–', '', train.filter(p => p.kind === 'workout').map(p => p.title).join(', ') || (done.length ? done.map(a => a.name).join(', ') : 'nichts geplant'), 'var(--run)', 'run', 'nav:calendar')}
     ${schoolOn() || SCH.own.length ? tile('Hausaufgaben', due.length, 'offen', due.length ? 'bis ' + (off === 0 ? 'morgen' : 'übermorgen') : 'alles erledigt', due.length ? 'var(--warn)' : 'var(--good)', 'check', 'nav:school') : ''}
     ${rd ? tile('Bereitschaft', rd.score, '/100', `Form ${Math.round(LOAD.tsb)}`, { high: 'var(--good)', mid: 'var(--warn)', low: 'var(--bad)' }[rd.level], 'heart', 'nav:dashboard') : ''}</div>`;
+  const tpm = off === 0 ? tpMissing(14).length : 0;
+  if (tpm) h += `<button class="card tpnote" data-act="tpbulk"><span class="dot" style="background:var(--warn)"></span><span><b>${tpm} Einheit${tpm === 1 ? '' : 'en'} fehlen in TrainingPeaks</b><span class="cap">Antippen, um alle auf einmal nachzutragen – damit deine Trainerin alles sieht.</span></span></button>`;
   if (SCH.data?.news?.length && off === 0) h += `<div class="card news">${SCH.data.news.map(n => `<div class="ins"><span class="dot" style="background:var(--school)"></span><div><b>${esc(n.subject || 'Nachricht')}</b><span class="fg" style="white-space:pre-wrap">${esc(n.text)}</span></div></div>`).join('')}</div>`;
   // Zeitstrahl
   const items = [...ls.map(l => ({ t: lessonDate(l.d, l.s), html: lessonRow(l, true) })),

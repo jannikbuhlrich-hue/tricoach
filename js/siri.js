@@ -27,7 +27,7 @@ const b64url = s => btoa(String.fromCharCode(...new TextEncoder().encode(s))).re
 function siriRepo() { const u = schoolUrl().match(/githubusercontent\.com\/([^/]+)\/([^/]+)\//); return u ? `${u[1]}/${u[2]}` : 'jannikbuhlrich-hue/tricoach'; }
 /* Einrichtungs-Link: übergibt Schlüssel lokal an Scriptable (bleibt auf dem Gerät, geht über keinen Server) */
 function siriSetupUrl() {
-  const o = { k: SCH.key || '', i: SET.source === 'icu' ? SET.icuKey || '' : '', r: siriRepo(), s: SET.shortcut || 'TriCoach', w: P.weight, h: 1 };
+  const o = { k: SCH.key || '', i: SET.source === 'icu' ? SET.icuKey || '' : '', r: siriRepo(), s: SET.shortcut || 'TriCoach', w: P.weight, h: 1, l: SET.scList ? 1 : 0 };
   return `scriptable:///run?scriptName=${encodeURIComponent(SIRI_SCRIPT)}&setup=${b64url(JSON.stringify(o))}`;
 }
 function siriConnect() {

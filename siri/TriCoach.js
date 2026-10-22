@@ -9,7 +9,7 @@
 //   hausaufgaben · prüfungen · wettkampf · letzte einheit
 //   eintragen <frei gesprochen>                      → z. B. „eintragen Lauf 45 Minuten 9 Kilometer locker“
 //   hilfe
-const VERSION = '1.1.0';
+const VERSION = '1.1.1';
 const IS_TEST = typeof module !== 'undefined' && module.__test;
 
 /* ===================== Einstellungen (Schlüsselbund des iPhones) ===================== */
@@ -532,7 +532,7 @@ async function buildWidget(now = new Date()) {
 function setupFrom(q) {
   try {
     const o = JSON.parse(utf8dec(b64dec(q)));
-    CFG = { ...CFG, key: o.k || CFG.key || '', icu: o.i != null ? o.i : (CFG.icu || ''), repo: o.r || CFG.repo, sc: o.s || CFG.sc || 'TriCoach', kg: o.w || CFG.kg, health: o.h !== 0 };
+    CFG = { ...CFG, key: o.k || CFG.key || '', icu: o.i != null ? o.i : (CFG.icu || ''), repo: o.r || CFG.repo, sc: o.s || CFG.sc || 'TriCoach', kg: o.w || CFG.kg, health: o.h !== 0, list: !!o.l };
     saveCfg(CFG); try { Keychain.remove('tricoach.dk'); } catch (e) { }
     return `TriCoach ist verbunden${CFG.key ? ' – Schule und Trainingsplan' : ''}${CFG.icu ? (CFG.key ? ' sowie' : ' –') + ' intervals.icu' : ''}. Sag jetzt zum Beispiel: Was steht morgen an?`;
   } catch (e) { return 'Der Einrichtungslink ist unvollständig. Bitte in TriCoach nochmal auf „Siri verbinden“ tippen.'; }
@@ -585,7 +585,7 @@ async function main() {
   let res;
   try { res = await run(input); } catch (e) { res = `Das hat nicht geklappt: ${e.message}`; }
   const text = typeof res === 'string' ? res : res.text;
-  if (typeof res === 'object' && res.health && CFG.health !== false) Script.setShortcutOutput({ antwort: text, health: JSON.stringify(res.health), gespeichert: !!res.saved });
+  if (typeof res === 'object' && res.health && CFG.health !== false) Script.setShortcutOutput({ antwort: text, health: JSON.stringify(CFG.list ? [res.health] : res.health), gespeichert: !!res.saved });
   else Script.setShortcutOutput(text);
   if (config.runsWithSiri) Speech.speak(text);
   else if (config.runsInApp) { const a = new Alert(); a.title = 'TriCoach'; a.message = text; a.addAction('OK'); await a.presentAlert(); }

@@ -18,7 +18,7 @@ function loadSettings() {
     race, source: s.source || 'demo', icuKey: s.icuKey || '', design: s.design || 'nacht',
     lastSync: s.lastSync || null, syncDays: s.syncDays || 120, wetsuit: s.wetsuit ?? true, cda: s.cda || null,
     calView: s.calView || 'month', calHidden: s.calHidden || [], showDone: s.showDone ?? true,
-    sprintV: 1, goals: s.goals || null, yearGoals: s.yearGoals || null, shortcut: s.shortcut || 'TriCoach', tpIcal: s.tpIcal || '', tpIcalAt: s.tpIcalAt || null, tpAt: s.tpAt || null, tpVia: s.tpVia || '', tpSeen: s.tpSeen || 0
+    sprintV: 1, goals: s.goals || null, yearGoals: s.yearGoals || null, shortcut: s.shortcut || 'TriCoach', tpIcal: s.tpIcal || '', tpIcalAt: s.tpIcalAt || null, tpAt: s.tpAt || null, tpVia: s.tpVia || '', tpSeen: s.tpSeen || 0, garminTp: s.garminTp ?? null, scList: !!s.scList, icuPush: s.icuPush, siriAt: s.siriAt || null
   };
 }
 function saveSettings() {
@@ -210,7 +210,14 @@ const ICU = (() => {
   }
   const update = (id, a) => send('PUT', `/activity/${encodeURIComponent(id)}`, { name: a.name, description: body(a).description, moving_time: Math.round(a.dur), distance: Math.round(a.dist || 0), type: typeOf(a) });
   const remove = id => send('DELETE', `/activity/${encodeURIComponent(id)}`);
-  return { sync, test, push, update, remove, lastNew: null };
+  /* Original-Datei der Uhr (für den Sammel-Export an TrainingPeaks) */
+  async function fitFile(id) {
+    for (const p of [`/activity/${id}/file`, `/activity/${id}/fit-file`]) {
+      try { const buf = await FIT.maybeGunzip(await get(p, true)); if (FIT.isFit(buf)) return new Uint8Array(buf); } catch (e) { if (/API-Key/.test(e.message)) throw e; }
+    }
+    return null;
+  }
+  return { sync, test, push, update, remove, fitFile, lastNew: null };
 })();
 
 /* ---------- Synchronisation steuern ---------- */

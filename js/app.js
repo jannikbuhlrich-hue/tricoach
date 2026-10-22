@@ -22,7 +22,7 @@ function shell() {
   const tabCur = ['swim', 'bike', 'run', 'wellness', 'analyse', 'pulse', 'map', 'race', 'school', 'settings'].includes(cur) ? 'analyse' : cur;
   document.getElementById('tabbar').innerHTML = TABS.map(([id, l, ic]) => `<button class="${tabCur === id ? 'on' : ''}" data-act="nav:${id}">${ICON[ic]}<span>${l}</span></button>`).join('');
 }
-const SHEETS = { lesson: lessonSheet, hw: hwSheet, plan: planSheet, log: logSheet, tp: tpSheet, tprace: tpRaceSheet, add: addMenuSheet, goals: goalsSheet };
+const SHEETS = { lesson: lessonSheet, hw: hwSheet, plan: planSheet, log: logSheet, tp: tpSheet, tprace: tpRaceSheet, add: addMenuSheet, goals: goalsSheet, tpbulk: tpBulkSheet };
 function render() {
   shell();
   const c = document.getElementById('content');
@@ -125,6 +125,11 @@ document.addEventListener('click', async e => {
     case 'schoolsync': syncSchool(true); break;
     case 'tpnow': fetchTpIcal(true); break;
     case 'siricopy': copySiriScript(); break;
+    case 'tpbulk': TPB.done = null; TPB.off.clear(); S.sheet = { t: 'tpbulk' }; render(); break;
+    case 'tpdays': TPB.days = +v; renderSheet(); break;
+    case 'tpzip': tpZip(); break;
+    case 'tphealthall': tpHealthAll(); break;
+    case 'tpmarkall': tpMarkAll(); break;
     case 'siriconnect': siriConnect(); break;
     case 'schoolweek': S.schoolWeek = (S.schoolWeek || 0) + +v; render(); break;
     case 'skgen': { const i = document.getElementById('sk'); if (i) { i.value = newSchoolKey(); i.select(); } break; }
@@ -168,6 +173,9 @@ document.addEventListener('change', async e => {
   if (k === 'speed') { if (S.live?.started) { const n = liveNow(); S.live.offset = n; S.live.t0 = performance.now(); } S.speed = t.checked ? 60 : 1; render(); }
   if (t.id === 'fitfiles' && t.files?.length) importFitFiles([...t.files]);
   if (k === 'sheet') refreshSheet();
+  if (k === 'tpsel') { if (t.checked) TPB.off.delete(t.value); else TPB.off.add(t.value); renderSheet(); }
+  if (k === 'tpgarmin') { SET.garminTp = t.checked ? false : null; saveSettings(); renderSheet(); }
+  if (k === 'sclist') { SET.scList = t.checked; saveSettings(); renderSheet(); }
   if (k === 'showdone') { SET.showDone = t.checked; saveSettings(); render(); }
   if (t.id === 'icsfile' && t.files?.[0]) { importIcs(await t.files[0].text()); t.value = ''; }
   if (t.id === 'restorefile' && t.files?.[0]) { await restoreBackup(t.files[0]); t.value = ''; }

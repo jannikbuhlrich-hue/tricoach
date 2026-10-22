@@ -23,7 +23,7 @@ function healthPayload(a) {
 }
 function sendToHealth(a) {
   if (!isIOS()) { S.sheet = { t: 'tp', id: a.id }; render(); toast('Apple Health geht nur auf iPhone/iPad – nimm hier die FIT-Datei'); return; }
-  const text = JSON.stringify(healthPayload(a));
+  const text = JSON.stringify(SET.scList ? [healthPayload(a)] : healthPayload(a));
   markTp(a.id, 'health');
   location.href = `shortcuts://run-shortcut?name=${encodeURIComponent(SET.shortcut || 'TriCoach')}&input=text&text=${encodeURIComponent(text)}`;
 }
@@ -141,9 +141,10 @@ function tpPlanStatus() {
 
 /* Anleitung in den Einstellungen */
 function tpSettingsCard() {
-  const open = PLAN.filter(p => p.kind === 'race' && !p.tp && p.date >= TODAY).length, todo = ACTS.filter(a => a.source === 'manual' && !a.tp && a.start >= addDays(TODAY, -14)).length;
+  const open = PLAN.filter(p => p.kind === 'race' && !p.tp && p.date >= TODAY).length, todo = tpMissing(30).length;
   return `<div class="card" id="tp"><h3>${ICON.tp} TrainingPeaks <small>${todo || open ? `${todo ? todo + ' Einheiten' : ''}${todo && open ? ' · ' : ''}${open ? open + ' Wettkämpfe' : ''} offen` : 'alles übertragen'}</small></h3>
     <span class="cap fg">Damit deine Trainerin alles sieht: Uhr-Einheiten laufen über <b>Garmin Connect → TrainingPeaks</b> (in Garmin Connect unter <b>Einstellungen → Drittanbieter-Apps → TrainingPeaks</b> verbinden, falls noch nicht geschehen). Für alles, was du hier einträgst, ist Apple Health die Brücke:</span>
+    <div class="opt ${tpMissing().length ? 'on' : ''}"><b>Fehlende Einheiten nachtragen ${tpMissing().length ? `<span class="tag">${tpMissing().length} offen</span>` : ''}</b><span class="cap fg">Alles, was in TrainingPeaks noch fehlt, auf einmal – am PC/iPad als FIT-Dateien zum Reinziehen, am iPhone über Apple Health.</span><div><button class="btn primary" data-act="tpbulk">${ICON.tp} In TrainingPeaks nachtragen</button></div></div>
     <div class="opt"><b>Einmalig: Kurzbefehl „TriCoach“ anlegen <span class="tag">ca. 5 min</span></b>
       <ol class="steps">
         <li>App <b>Kurzbefehle</b> → <b>+</b> → Name <b>${esc(SET.shortcut)}</b>.</li>
@@ -206,4 +207,77 @@ async function fetchTpIcal(manual) {
     SET.tpIcalAt = Date.now(); SET.tpAt = at; SET.tpVia = via; SET.tpSeen = 1; saveSettings(); TP.err = '';
   } catch (e) { TP.err = e instanceof TypeError ? 'Keine Verbindung zu GitHub – später nochmal' : e.message; if (manual) toast(TP.err); }
   finally { TP.busy = false; render(); }
+}
+
+/* ---------- Sammel-Export: alles, was in TrainingPeaks fehlt, auf einmal ----------
+   Fehlend = eigene Einträge ohne TP-Haken, per Siri/anderem Gerät über intervals.icu eingetragene Einheiten
+   und – nur wenn Garmin Connect NICHT mit TrainingPeaks verbunden ist – auch die Uhr-Einheiten.
+   PC/iPad: eine ZIP mit FIT-Dateien (Uhr-Einheiten als Originaldatei aus intervals.icu), alle zusammen auf den
+   TrainingPeaks-Kalender ziehen – jede landet am richtigen Tag, Doppelte überspringt TrainingPeaks selbst.
+   iPhone: alle zusammen an Apple Health (Kurzbefehl im Listen-Modus) – TrainingPeaks holt Health-Workouts der letzten 7 Tage. */
+const TPB = { days: 30, off: new Set(), busy: false, done: null };
+const tpMissing = (days = TPB.days) => ACTS.filter(a => a.source !== 'demo' && !a.tp && a.start >= addDays(TODAY, -days) && a.start <= NOW &&
+  (a.source === 'manual' || a.viaTc || (SET.garminTp === false && (a.source === 'icu' || a.source === 'fit'))));
+const tpChosen = () => tpMissing().filter(a => !TPB.off.has(a.id));
+
+/* ZIP (ohne Kompression) – reicht für FIT-Dateien, keine Bibliothek nötig */
+const CRC32 = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return b => { let c = 0xFFFFFFFF; for (let i = 0; i < b.length; i++) c = t[(c ^ b[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }; })();
+function makeZip(files) {
+  const enc = new TextEncoder(), parts = [], central = []; let off = 0;
+  const u16 = v => [v & 255, (v >>> 8) & 255], u32 = v => [v & 255, (v >>> 8) & 255, (v >>> 16) & 255, (v >>> 24) & 255];
+  const now = new Date(), dosT = (now.getHours() << 11) | (now.getMinutes() << 5) | (now.getSeconds() >> 1), dosD = ((now.getFullYear() - 1980) << 9) | ((now.getMonth() + 1) << 5) | now.getDate();
+  for (const f of files) {
+    const name = enc.encode(f.name), crc = CRC32(f.data), n = f.data.length;
+    const head = [...u32(0x04034b50), ...u16(20), ...u16(0x0800), ...u16(0), ...u16(dosT), ...u16(dosD), ...u32(crc), ...u32(n), ...u32(n), ...u16(name.length), ...u16(0)];
+    parts.push(new Uint8Array(head), name, f.data);
+    central.push(new Uint8Array([...u32(0x02014b50), ...u16(20), ...u16(20), ...u16(0x0800), ...u16(0), ...u16(dosT), ...u16(dosD), ...u32(crc), ...u32(n), ...u32(n), ...u16(name.length), ...u16(0), ...u16(0), ...u16(0), ...u16(0), ...u32(0), ...u32(off)]), name);
+    off += head.length + name.length + n;
+  }
+  const cdSize = central.reduce((s, p) => s + p.length, 0);
+  return new Blob([...parts, ...central, new Uint8Array([...u32(0x06054b50), ...u16(0), ...u16(0), ...u16(files.length), ...u16(files.length), ...u32(cdSize), ...u32(off), ...u16(0)])], { type: 'application/zip' });
+}
+/* FIT je Einheit: Uhr-Einheit möglichst als Originaldatei (volle Kurven, GPS), sonst von TriCoach erzeugt */
+async function fitFor(a) {
+  if ((a.source === 'icu' || a.source === 'fit') && !a.viaTc && a.extId && SET.source === 'icu' && SET.icuKey) { try { const raw = await ICU.fitFile(a.extId); if (raw) return raw; } catch (e) { } }
+  return buildFit(a);
+}
+async function tpZip() {
+  const list = tpChosen(); if (!list.length) { toast('Nichts ausgewählt'); return; }
+  TPB.busy = true; renderSheet();
+  try {
+    const files = [], used = new Set();
+    for (const a of list) { let n = fitName(a); while (used.has(n)) n = n.replace(/\.fit$/, '-2.fit'); used.add(n); files.push({ name: n, data: await fitFor(a) }); }
+    const name = `TriCoach-fuer-TrainingPeaks_${isoDay(TODAY)}.zip`, blob = makeZip(files), file = new File([blob], name, { type: 'application/zip' });
+    if (isIOS() && navigator.canShare?.({ files: [file] })) { try { await navigator.share({ files: [file], title: name }); } catch (e) { if (e.name === 'AbortError') { TPB.busy = false; renderSheet(); return; } } }
+    else { const url = URL.createObjectURL(blob), el = document.createElement('a'); el.href = url; el.download = name; document.body.appendChild(el); el.click(); el.remove(); setTimeout(() => URL.revokeObjectURL(url), 15000); }
+    TPB.done = { how: 'fit', ids: list.map(a => a.id) };
+    toast(`${list.length} FIT-Dateien gepackt – jetzt in TrainingPeaks auf den Kalender ziehen`);
+  } catch (e) { toast('Export fehlgeschlagen: ' + e.message); }
+  TPB.busy = false; renderSheet();
+}
+function tpHealthAll() {
+  const list = tpChosen().filter(a => a.start >= addDays(TODAY, -6)); if (!list.length) { toast('Keine Einheit aus den letzten 7 Tagen ausgewählt'); return; }
+  if (!SET.scList) { toast('Erst den Kurzbefehl auf Listen umstellen (Anleitung unten)'); return; }
+  TPB.done = { how: 'health', ids: list.map(a => a.id) }; renderSheet();
+  location.href = `shortcuts://run-shortcut?name=${encodeURIComponent(SET.shortcut || 'TriCoach')}&input=text&text=${encodeURIComponent(JSON.stringify(list.map(healthPayload)))}`;
+}
+function tpMarkAll() {
+  const d = TPB.done; if (!d) return;
+  d.ids.forEach(id => markTp(id, d.how)); TPB.done = null; recompute(); closeSheet();
+  toast(`${d.ids.length} Einheiten als „in TrainingPeaks“ markiert`);
+}
+function tpBulkSheet() {
+  const miss = tpMissing(), chosen = tpChosen(), ios = isIOS(), week = chosen.filter(a => a.start >= addDays(TODAY, -6)).length;
+  let b = `<span class="cap fg">${miss.length ? `${miss.length} Einheit${miss.length === 1 ? '' : 'en'} der letzten ${TPB.days} Tage ${miss.length === 1 ? 'ist' : 'sind'} noch nicht in TrainingPeaks.` : 'Alles drin – nichts nachzutragen.'} Uhr-Einheiten kommen normalerweise automatisch über Garmin Connect.</span>`;
+  b += `<div class="seg fill">${[[7, '7 Tage'], [30, '30 Tage'], [90, '90 Tage'], [365, '1 Jahr']].map(([d, l]) => `<button type="button" class="${TPB.days === d ? 'on' : ''}" data-act="tpdays:${d}">${l}</button>`).join('')}</div>`;
+  b += `<label class="frow"><span>Garmin Connect ist <b>nicht</b> mit TrainingPeaks verbunden <em class="cap">dann auch alle Uhr-Einheiten mitnehmen</em></span><input type="checkbox" data-change="tpgarmin" ${SET.garminTp === false ? 'checked' : ''}></label>`;
+  if (miss.length) b += `<div class="list">${miss.map(a => `<label class="frow tpb"><span><b>${esc(a.name)}</b> <em class="cap">${shortDate(a.start)} · ${hm(a.dur)}${a.dist ? ' · ' + distTxt(a.sport, a.dist) : ''}${a.source === 'manual' ? '' : a.viaTc ? ' · per Siri' : ' · Uhr'}</em></span><input type="checkbox" data-change="tpsel" value="${a.id}" ${TPB.off.has(a.id) ? '' : 'checked'}></label>`).join('')}</div>`;
+  if (chosen.length) {
+    b += `<div class="opt"><b>Am PC oder iPad <span class="tag">empfohlen · alle auf einmal</span></b><ol class="steps"><li><b>ZIP erzeugen</b> (${chosen.length} FIT-Datei${chosen.length === 1 ? '' : 'en'}${SET.garminTp === false ? ', Uhr-Einheiten als Originaldatei' : ''}).</li><li>ZIP entpacken (Doppelklick bzw. in „Dateien“ antippen).</li><li><a href="${TP_URL}" target="_blank" rel="noopener">app.trainingpeaks.com</a> → Kalender. Alle .fit-Dateien markieren und <b>zusammen auf den Kalender ziehen</b> – jede landet am richtigen Tag und wird mit der geplanten Einheit verbunden. Schon vorhandene überspringt TrainingPeaks.</li></ol>
+      <div><button class="btn primary" data-act="tpzip" ${TPB.busy ? 'disabled' : ''}>${icon('share', 14)} ${TPB.busy ? 'Packe …' : 'ZIP erzeugen'}</button></div></div>`;
+    if (ios) b += `<div class="opt"><b>Am iPhone über Apple Health</b><span class="cap fg">TrainingPeaks holt Health-Workouts nur aus den letzten 7 Tagen – hier ${week} ausgewählt.</span>${SET.scList ? `<div><button class="btn" data-act="tphealthall" ${week ? '' : 'disabled'}>${icon('heart', 14)} Alle ${week} an Apple Health</button></div>` : ''}
+      <details><summary class="cap">${SET.scList ? 'Kurzbefehl im Listen-Modus ✓' : 'Einmalig: Kurzbefehl auf Listen umstellen'}</summary><ol class="steps"><li>Kurzbefehl <b>${esc(SET.shortcut)}</b> bearbeiten: direkt nach <b>„Wörterbuch abrufen“</b> die Aktion <b>„Wiederholen mit jedem Objekt“</b> einfügen (Eingabe = Wörterbuch).</li><li>Alle übrigen Aktionen (Werte holen, „Wenn“, „Training protokollieren“) in den Wiederholen-Block ziehen und dort <b>Wiederholungsobjekt</b> statt Wörterbuch verwenden.</li><li>Hier umstellen:</li></ol><label class="toggle"><input type="checkbox" data-change="sclist" ${SET.scList ? 'checked' : ''}> Mein Kurzbefehl kann Listen</label></details></div>`;
+  }
+  if (TPB.done) b += `<div class="ins"><span class="dot" style="background:var(--good)"></span><div><b>${TPB.done.ids.length} Einheiten übergeben</b><span>Sind sie in TrainingPeaks angekommen? Dann hier abhaken – TriCoach merkt sich das.</span><div><button class="btn primary" data-act="tpmarkall">${icon('check', 14)} Alle als „in TrainingPeaks“ markieren</button></div></div></div>`;
+  return sheetWrap('In TrainingPeaks nachtragen', b, false);
 }
