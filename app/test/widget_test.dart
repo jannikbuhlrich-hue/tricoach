@@ -104,18 +104,18 @@ void main() {
 
     // Breiter Bildschirm → Navigation links
     expect(find.byType(NavigationRail), findsOneWidget);
-    await tester.tap(find.text('Fortschritt'));
+    await tester.tap(find.descendant(of: find.byType(NavigationRail), matching: find.text('Fortschritt')));
     await settle(tester, 'Schritt 8');
     expect(find.text('Form-Kurve'), findsOneWidget);
     expect(find.text('VO2 Max'), findsOneWidget);
 
-    await tester.tap(find.text('Einstellungen'));
+    await tester.tap(find.descendant(of: find.byType(NavigationRail), matching: find.text('Einstellungen')));
     await settle(tester, 'Schritt 9');
     await tester.tap(find.text('Nordsee'));
     await settle(tester, 'Schritt 10');
     expect(state.design.name, 'nordsee');
 
-    await tester.tap(find.text('Kalender'));
+    await tester.tap(find.descendant(of: find.byType(NavigationRail), matching: find.text('Kalender')));
     await settle(tester, 'Schritt 11');
     await tester.tap(find.text('Woche'));
     await settle(tester, 'Schritt 12');
