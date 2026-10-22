@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -11,6 +13,10 @@ import 'ui/theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Lizenz der eingebauten Schrift (erscheint unter Einstellungen → Open-Source-Lizenzen)
+  LicenseRegistry.addLicense(() async* {
+    yield LicenseEntryWithLineBreaks(const ['Roboto (Schrift)'], await rootBundle.loadString('assets/fonts/OFL.txt'));
+  });
   if (AppConfig.hasBackend) {
     await Supabase.initialize(url: AppConfig.supabaseUrl, publishableKey: AppConfig.supabaseAnonKey);
   }

@@ -37,9 +37,10 @@ unter den Einstellungen der Funktion **Verify JWT** ausschalten.
 
 ## 3b. Verbindungen (WebUntis, TrainingPeaks)
 
-1. SQL Editor: Inhalt von `migrations/20261022180000_integrations.sql` → **Run**.
+1. SQL Editor: Inhalt von `migrations/20261022180000_integrations.sql` und danach `migrations/20261022200000_integrations_cache.sql` → **Run**.
 2. Funktion `feeds` mit dem Inhalt von `functions/feeds/index.ts` anlegen (CLI: `supabase functions deploy feeds --no-verify-jwt`),
    **Verify JWT** ausschalten – die Funktion prüft den Login selbst und beantwortet die Schulsuche auch ohne Login.
+3. Notschalter: Secret `UNTIS_OFF` = `1` (Edge Functions → Secrets) schaltet die WebUntis-Verbindung für alle ab, z. B. falls Untis es verlangt.
 
 ## 4. Login einstellen
 

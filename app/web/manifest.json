@@ -1,11 +1,11 @@
 {
-    "name": "tricoach",
-    "short_name": "tricoach",
+    "name": "TriCoach",
+    "short_name": "TriCoach",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#16181d",
+    "theme_color": "#16181d",
+    "description": "Triathlon-Training, Schule und Kalender in einer App.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
@@ -31,5 +31,6 @@
             "type": "image/png",
             "purpose": "maskable"
         }
-    ]
+    ],
+    "lang": "de"
 }

@@ -23,6 +23,13 @@ const CORS = {
 const json = (o, status = 200) => new Response(JSON.stringify(o), { status, headers: { ...CORS, 'Content-Type': 'application/json' } });
 class UserError extends Error {}
 
+// Ehrliche Kennung bei allen Abrufen (wer fragt an, wo gibt es Infos)
+const UA = 'Mozilla/5.0 (compatible; TriCoach/3.0; +https://jannikbuhlrich-hue.github.io/tricoach/v3/)';
+// Schonend: je Nutzer höchstens alle 15 Minuten ein echter Abruf, sonst die letzte Antwort
+const CACHE_MS = 15 * 60 * 1000;
+// Notschalter: Secret UNTIS_OFF=1 (Edge Functions → Secrets) schaltet die WebUntis-Verbindung für alle ab
+const untisOff = () => Deno.env.get('UNTIS_OFF') === '1';
+
 function serviceKey() {
   const legacy = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
   if (legacy) return legacy;
@@ -89,7 +96,7 @@ async function totp(secret, t = Date.now(), digits = 6) {
 /* ---------- WebUntis ---------- */
 async function untis(z) {
   const base = `https://${z.server}/WebUntis`, school = z.school;   // UNTIS_TEST_BASE nur für lokale Tests
-  const H = { 'Content-Type': 'application/json', Accept: 'application/json', 'Cache-Control': 'no-cache', 'X-Requested-With': 'XMLHttpRequest', 'User-Agent': 'Mozilla/5.0 (TriCoach)' };
+  const H = { 'Content-Type': 'application/json', Accept: 'application/json', 'Cache-Control': 'no-cache', 'X-Requested-With': 'XMLHttpRequest', 'User-Agent': UA };
   const jar = new Map([['schoolname', `"_${b64(school)}"`]]);
   const cookie = () => [...jar].map(([k, v]) => `${k}=${v}`).join('; ');
   const keep = r => { for (const c of r.headers.getSetCookie?.() || []) { const [kv] = c.split(';'), i = kv.indexOf('='); if (i > 0) jar.set(kv.slice(0, i).trim(), kv.slice(i + 1).trim()); } };
@@ -237,7 +244,7 @@ async function untis(z) {
 async function searchSchool(q) {
   if (q.trim().length < 3) return [];
   const r = await fetch('https://mobile.webuntis.com/ms/schoolquery2', {
-    method: 'POST', headers: { 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0 (TriCoach)' },
+    method: 'POST', headers: { 'Content-Type': 'application/json', 'User-Agent': UA },
     body: JSON.stringify({ id: 'TriCoach', method: 'searchSchool', params: [{ search: q.trim() }], jsonrpc: '2.0' }),
   });
   const j = await r.json().catch(() => ({}));
@@ -254,7 +261,7 @@ async function searchSchool(q) {
 /* App-Schlüssel mit Benutzer + Passwort holen (so richtet sich die Untis-App ein) – das Passwort wird danach vergessen */
 async function sharedSecret(server, school, user, password) {
   const r = await fetch(`https://${server}/WebUntis/jsonrpc_intern.do?m=getAppSharedSecret&school=${encodeURIComponent(school)}&v=i3.5`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0 (TriCoach)' },
+    method: 'POST', headers: { 'Content-Type': 'application/json', 'User-Agent': UA },
     body: JSON.stringify({ id: 'TriCoach', method: 'getAppSharedSecret', params: [{ userName: user, password }], jsonrpc: '2.0' }),
   });
   const j = await r.json().catch(() => ({}));
@@ -272,7 +279,7 @@ function normIcal(s) {
   return u.toString();
 }
 async function fetchIcs(link) {
-  const r = await fetch(link, { headers: { 'User-Agent': 'TriCoach/3 (+supabase)', Accept: 'text/calendar,*/*' } });
+  const r = await fetch(link, { headers: { 'User-Agent': UA, Accept: 'text/calendar,*/*' } });
   if (!r.ok) throw new UserError(`Kalender nicht erreichbar (HTTP ${r.status}) – ist der Link noch gültig?`);
   const ics = await r.text();
   if (!ics.includes('BEGIN:VCALENDAR')) throw new UserError('Unter dem Link liegt keine Kalenderdatei.');
@@ -294,9 +301,12 @@ Deno.serve(async (req) => {
     const uid = auth?.user?.id;
     if (!uid) return json({ error: 'Bitte zuerst in TriCoach anmelden.' }, 401);
 
-    const load = async kind => (await db.from('integrations').select('config, label, updated_at').eq('user_id', uid).eq('kind', kind).maybeSingle()).data;
-    const save = async (kind, config, label) => {
-      const { error } = await db.from('integrations').upsert({ user_id: uid, kind, config, label, updated_at: new Date().toISOString() });
+    const load = async kind => (await db.from('integrations').select('config, label, updated_at, cache, cached_at').eq('user_id', uid).eq('kind', kind).maybeSingle()).data;
+    const fresh = row => row?.cache && row.cached_at && Date.now() - new Date(row.cached_at).getTime() < CACHE_MS;
+    const remember = async (kind, cache) => { await db.from('integrations').update({ cache, cached_at: new Date().toISOString() }).eq('user_id', uid).eq('kind', kind); };
+    const save = async (kind, config, label, cache = null) => {
+      const now = new Date().toISOString();
+      const { error } = await db.from('integrations').upsert({ user_id: uid, kind, config, label, updated_at: now, cache, cached_at: now });
       if (error) throw new Error('Speichern fehlgeschlagen: ' + error.message);
     };
 
@@ -306,6 +316,7 @@ Deno.serve(async (req) => {
         return json({ links: Object.fromEntries((data || []).map(r => [r.kind, { label: r.label, at: r.updated_at }])) });
       }
       case 'untisConnect': {
+        if (untisOff()) throw new UserError('Die Schul-Verbindung ist gerade abgeschaltet.');
         let z;
         if (body.zugang) {
           z = parseZugang(String(body.zugang));
@@ -318,24 +329,31 @@ Deno.serve(async (req) => {
         if (!z.key) throw new UserError('Für die dauerhafte Verbindung braucht TriCoach den App-Schlüssel (Link aus „Zugriff über Untis Mobile“).');
         const data = await untis({ ...z, password: '' });
         const label = `${body.name || z.school} · ${z.user}`;
-        await save('webuntis', { server: z.server, school: z.school, user: z.user, key: z.key }, label);
+        await save('webuntis', { server: z.server, school: z.school, user: z.user, key: z.key }, label, data);
         return json({ label, data });
       }
       case 'untisFetch': {
         const row = await load('webuntis');
         if (!row) return json({ error: 'WebUntis ist nicht verbunden.', code: 'none' }, 404);
-        return json({ data: await untis({ ...row.config, password: '' }) });
+        if (untisOff()) throw new UserError('Die Schul-Verbindung ist gerade abgeschaltet.');
+        if (fresh(row)) return json({ data: row.cache, cached: true });
+        const data = await untis({ ...row.config, password: '' });
+        await remember('webuntis', data);
+        return json({ data });
       }
       case 'tpConnect': {
         const link = normIcal(body.ical), ics = await fetchIcs(link);
         const label = /trainingpeaks/i.test(link) ? 'TrainingPeaks' : new URL(link).hostname;
-        await save('trainingpeaks', { ical: link }, label);
+        await save('trainingpeaks', { ical: link }, label, { ics });
         return json({ label, ics, at: new Date().toISOString() });
       }
       case 'tpFetch': {
         const row = await load('trainingpeaks');
         if (!row) return json({ error: 'TrainingPeaks ist nicht verbunden.', code: 'none' }, 404);
-        return json({ ics: await fetchIcs(row.config.ical), at: new Date().toISOString() });
+        if (fresh(row) && row.cache?.ics) return json({ ics: row.cache.ics, at: row.cached_at, cached: true });
+        const ics = await fetchIcs(row.config.ical);
+        await remember('trainingpeaks', { ics });
+        return json({ ics, at: new Date().toISOString() });
       }
       case 'disconnect': {
         await db.from('integrations').delete().eq('user_id', uid).eq('kind', String(body.kind || ''));

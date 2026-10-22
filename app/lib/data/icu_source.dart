@@ -83,6 +83,7 @@ class IcuSource {
       source: 'icu',
       extId: id,
       details: {
+        if ('${item['device_name'] ?? ''}'.trim().isNotEmpty) 'device': '${item['device_name']}'.trim(),
         if (n(item['icu_weighted_avg_watts']) != null) 'np': n(item['icu_weighted_avg_watts'])!.round(),
         if (n(item['icu_average_watts']) != null) 'ap': n(item['icu_average_watts'])!.round(),
         if (n(item['total_elevation_gain']) != null) 'elev': n(item['total_elevation_gain'])!.round(),

@@ -18,6 +18,8 @@ Die bisherige Web-App (Ordner `../js`, `../index.html`) bleibt unverändert und 
 | Import | Sicherung aus der Web-App 2.x (Einheiten, Korrekturen, Kalender, Profil) – ohne Doppelte; FIT-Dateien von der Uhr (USB/Garmin Connect) |
 | Export | Jede Einheit als FIT-Datei (byte-gleich mit der Web-App, die mit dem Garmin FIT SDK geprüft ist) – z. B. für TrainingPeaks |
 | Designs | Nacht, Gletscher, Asphalt, Nordsee |
+| Rechtliches | Einstellungen → Rechtliches: Open-Source-Lizenzen (inkl. Roboto/OFL), Markenhinweis, Garmin-Kennzeichnung an Einheiten, Schule als Beta, kein Arzt-Ersatz, Datenschutz in Kürze |
+| Datenschutz Web | Lädt nichts von Google-Servern: CanvasKit lokal (`--no-web-resources-cdn`), Roboto eingebaut, keine Ersatzschriften von fonts.gstatic.com (`web/flutter_bootstrap.js`) |
 | Einführung | Einwilligung Gesundheitsdaten (DSGVO), Uhr, Kalender, Account |
 
 | Schule | Für jeden Nutzer: Einstellungen → WebUntis → Verbinden (Schule suchen + Benutzer + Passwort, oder Link aus „Zugriff über Untis Mobile“ bei Microsoft-Login). Stundenplan mit Doppelstunden, Entfall, Vertretung, Prüfungen, Hausaufgaben zum Abhaken in Mein Tag |

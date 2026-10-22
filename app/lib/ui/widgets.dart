@@ -128,6 +128,7 @@ class ActivityTile extends StatelessWidget {
       if (a.distanceM > 0) distTxt(a.sport, a.distanceM),
       if (a.avgHr != null) 'Ø ${a.avgHr} bpm',
       if (a.tss != null) 'TSS ${a.tss!.round()}',
+      if (a.garminLabel != null) a.garminLabel!,
     ];
     return ListTile(
       contentPadding: EdgeInsets.zero,

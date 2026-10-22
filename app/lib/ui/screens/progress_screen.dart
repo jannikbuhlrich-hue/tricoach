@@ -176,6 +176,11 @@ class _ProgressScreenState extends State<ProgressScreen> {
               ],
             ]),
           ),
+          if (app.activities.any((a) => a.garminLabel != null))
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: Text('Enthält Daten von Garmin-Geräten.', textAlign: TextAlign.center, style: TextStyle(color: c.faint, fontSize: 12)),
+            ),
         ],
       ),
     );

@@ -15,6 +15,7 @@ import '../theme.dart';
 import '../widgets.dart';
 import 'coach_screen.dart';
 import 'connect_screens.dart';
+import 'legal_screen.dart';
 import 'login_screen.dart';
 import 'tp_export_screen.dart';
 
@@ -55,7 +56,7 @@ class SettingsScreen extends StatelessWidget {
             title: 'Coach',
             icon: Icons.groups_rounded,
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('Dein Coach sieht deine Einheiten und plant dir Trainings direkt in den Kalender – ohne TrainingPeaks-Abo.', style: TextStyle(color: c.muted)),
+              Text('Dein Coach sieht deine Einheiten und plant dir Trainings direkt in den Kalender – ohne Zusatz-Abo.', style: TextStyle(color: c.muted)),
               const SizedBox(height: 8),
               FilledButton.tonalIcon(
                 onPressed: app.signedIn ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CoachScreen())) : () => openLogin(context),
@@ -68,6 +69,15 @@ class SettingsScreen extends StatelessWidget {
           const _FeedsCard(),
           const SizedBox(height: 12),
           _data(context, app, c),
+          const SizedBox(height: 12),
+          TriCard(
+            title: 'Rechtliches',
+            icon: Icons.gavel_rounded,
+            child: Wrap(spacing: 8, runSpacing: 4, children: [
+              OutlinedButton.icon(onPressed: () => openLegal(context), icon: const Icon(Icons.info_outline_rounded), label: const Text('Rechtliches & Datenschutz')),
+              OutlinedButton.icon(onPressed: () => openLicenses(context), icon: const Icon(Icons.description_rounded), label: const Text('Open-Source-Lizenzen')),
+            ]),
+          ),
           const SizedBox(height: 12),
           Center(child: Text('TriCoach ${AppConfig.appVersion}', style: TextStyle(color: c.faint, fontSize: 12))),
         ],
@@ -485,7 +495,7 @@ class _FeedsCard extends StatelessWidget {
         ListTile(
           contentPadding: EdgeInsets.zero,
           leading: Icon(Icons.school_rounded, color: app.untisOn ? c.good : c.muted),
-          title: const Text('WebUntis'),
+          title: const Text('WebUntis (Beta)'),
           subtitle: app.untisOn
               ? status(app.schoolError, '${app.links['webuntis']}${when(app.school?.at)}')
               : const Text('Stundenplan, Ausfall, Hausaufgaben, Prüfungen'),

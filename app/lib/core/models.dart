@@ -70,6 +70,15 @@ class Activity {
   final DateTime? deletedAt;
 
   bool get isManual => source == 'manual';
+
+  /// „Garmin Forerunner 265“ bzw. „Garmin“, wenn die Daten von einem Garmin-Gerät stammen.
+  /// Garmin verlangt diese Angabe überall, wo seine Daten angezeigt werden (Brand Guidelines, Bedingungen von intervals.icu).
+  String? get garminLabel {
+    final d = '${details?['device'] ?? ''}'.trim();
+    if (d.toLowerCase().contains('garmin')) return d.toLowerCase().startsWith('garmin') ? d : 'Garmin $d';
+    if (source == 'health' && RegExp(r'^(garmin )?connect( iq)?$', caseSensitive: false).hasMatch(d)) return 'Garmin';
+    return null;
+  }
   bool get isDeleted => deletedAt != null;
   DateTime get end => start.add(Duration(seconds: durationS));
 

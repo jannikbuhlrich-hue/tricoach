@@ -90,6 +90,10 @@ class _UntisConnectScreenState extends State<UntisConnectScreen> {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 520),
           child: ListView(padding: const EdgeInsets.all(16), children: [
+            Text('Beta: TriCoach meldet sich mit deinen eigenen Zugangsdaten an wie die Untis-App. Das ist keine offizielle Untis-Schnittstelle – '
+                'verbindlich bleibt, was in WebUntis steht.',
+                style: TextStyle(color: c.muted, fontSize: 12)),
+            const SizedBox(height: 12),
             SegmentedButton<bool>(
               segments: const [
                 ButtonSegment(value: false, label: Text('Mit Passwort'), icon: Icon(Icons.password_rounded)),

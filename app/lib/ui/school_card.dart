@@ -49,7 +49,11 @@ class SchoolCard extends StatelessWidget {
         for (final n in news)
           Padding(
             padding: const EdgeInsets.only(top: 8),
-            child: Text('📣 ${[n.subject, n.text].where((x) => x.isNotEmpty).join(': ')}', style: TextStyle(color: c.muted, fontSize: 13)),
+            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Icon(Icons.campaign_rounded, size: 16, color: c.muted),
+              const SizedBox(width: 6),
+              Expanded(child: Text([n.subject, n.text].where((x) => x.isNotEmpty).join(': '), style: TextStyle(color: c.muted, fontSize: 13))),
+            ]),
           ),
         if (exams.isNotEmpty) ...[
           const SizedBox(height: 12),
@@ -57,11 +61,15 @@ class SchoolCard extends StatelessWidget {
           for (final x in exams)
             Padding(
               padding: const EdgeInsets.only(top: 4),
-              child: Text(
-                '📝 ${x.name.isNotEmpty ? x.name : 'Prüfung'}${x.su.isNotEmpty ? ' · ${s.subjectName(x.su)}' : ''} · '
+              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Icon(Icons.edit_note_rounded, size: 16, color: x.startsAt.difference(today).inDays <= 3 ? c.warn : c.fg),
+                const SizedBox(width: 6),
+                Expanded(child: Text(
+                '${x.name.isNotEmpty ? x.name : 'Prüfung'}${x.su.isNotEmpty ? ' · ${s.subjectName(x.su)}' : ''} · '
                 '${_wdShort[x.startsAt.weekday - 1]}, ${shortDate(x.startsAt)}${x.start.isNotEmpty ? ' ${x.start}' : ''}${x.ro.isNotEmpty ? ' · ${x.ro}' : ''}',
                 style: TextStyle(color: x.startsAt.difference(today).inDays <= 3 ? c.warn : c.fg, fontSize: 13),
-              ),
+              )),
+              ]),
             ),
         ],
         if (hw.isNotEmpty) ...[
