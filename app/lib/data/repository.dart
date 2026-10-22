@@ -4,7 +4,9 @@ import 'package:uuid/uuid.dart';
 
 import '../core/analytics.dart';
 import '../core/backup_import.dart';
+import '../core/format.dart';
 import '../core/models.dart';
+import '../core/tp_plan.dart';
 import 'local_store.dart';
 import 'sync_engine.dart';
 
@@ -108,6 +110,63 @@ class Repository {
     await sync.saveLocal('planned', [for (final p in newP) p.toRow()]);
     await reload();
     return (activities: newA.length, planned: newP.length, skipped: b.skipped + (b.activities.length - newA.length));
+  }
+
+  /// Plan der Trainerin aus TrainingPeaks übernehmen ([known] = IDs, die früher aus TrainingPeaks kamen):
+  /// neue und geänderte Einträge speichern; was die Trainerin gelöscht hat, verschwindet auch hier –
+  /// aber nur im Zeitraum der Datei und nur, wenn die Einheit noch nicht erledigt ist.
+  /// Was du selbst gelöscht hast, bleibt gelöscht. Unveränderte Einträge werden nicht angefasst (kein unnötiger Abgleich).
+  Future<({int added, int changed, int removed, Set<String> ids})> importTpPlan(List<PlannedSession> feed, Set<String> known, {DateTime? now}) async {
+    final rows = <Map<String, dynamic>>[];
+    var added = 0, changed = 0;
+    for (final p in feed) {
+      final r = await store.get('planned', p.id);
+      if (r == null) {
+        rows.add(p.toRow());
+        added++;
+        continue;
+      }
+      final old = PlannedSession.fromRow(r);
+      if (old.isDeleted || !tpChanged(old, p)) continue;
+      rows.add(PlannedSession(
+        id: p.id,
+        kind: old.kind,
+        sport: p.sport,
+        title: p.title,
+        startsAt: p.startsAt,
+        minutes: p.minutes,
+        distanceM: old.distanceM,
+        allDay: p.allDay,
+        notes: p.notes,
+        racePrio: old.racePrio ?? p.racePrio,
+        createdBy: old.createdBy,
+      ).toRow());
+      changed++;
+    }
+    final ids = {for (final p in feed) p.id};
+    final removedIds = <String>{};
+    if (feed.isNotEmpty) {
+      final starts = [for (final p in feed) startOfDay(p.startsAt.toLocal())]..sort();
+      final today = startOfDay(now ?? DateTime.now());
+      final lo = starts.first;
+      final hiFile = addDays(starts.last, 1), hiMin = addDays(today, 8);
+      final hi = hiFile.isAfter(hiMin) ? hiFile : hiMin; // TrainingPeaks liefert mind. ~2 Wochen voraus
+      for (final id in known.difference(ids)) {
+        final r = await store.get('planned', id);
+        if (r == null) continue;
+        final p = PlannedSession.fromRow(r);
+        if (p.isDeleted) continue;
+        final s = p.startsAt.toLocal();
+        if (s.isBefore(lo) || !s.isBefore(hi) || doneFor(p) != null) continue;
+        rows.add(p.copyWith(deletedAt: DateTime.now().toUtc()).toRow());
+        removedIds.add(id);
+      }
+    }
+    if (rows.isNotEmpty) {
+      await sync.saveLocal('planned', rows);
+      await reload();
+    }
+    return (added: added, changed: changed, removed: removedIds.length, ids: {...ids, ...known.difference(ids).difference(removedIds)});
   }
 
   /// Einheiten eines Tages (lokale Zeit)

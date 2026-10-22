@@ -69,13 +69,25 @@ jobs:
       - name: Web-Version bauen
         id: web
         continue-on-error: true
-        run: flutter build web --release --dart-define=SUPABASE_URL=${{ vars.SUPABASE_URL }} --dart-define=SUPABASE_ANON_KEY=${{ vars.SUPABASE_ANON_KEY }} 2>&1 | tail -150 | tee ../ci-out/5-web-build.txt
+        run: flutter build web --release --base-href /tricoach/v3/ --dart-define=SUPABASE_URL=${{ vars.SUPABASE_URL }} --dart-define=SUPABASE_ANON_KEY=${{ vars.SUPABASE_ANON_KEY }} 2>&1 | tail -150 | tee ../ci-out/5-web-build.txt
       - uses: actions/upload-artifact@v4
         if: steps.web.outcome == 'success'
         with:
           name: tricoach-web
           path: app/build/web
           retention-days: 14
+      - name: Web-Version veröffentlichen (jannikbuhlrich-hue.github.io/tricoach/v3/)
+        # Nur wenn Tests und Build grün sind. Landet im Ordner v3/ auf main – die Web-App 2.x im Hauptordner bleibt unberührt.
+        if: steps.web.outcome == 'success' && steps.test.outcome == 'success' && github.ref == 'refs/heads/flutter-app'
+        run: |
+          d=$(mktemp -d)
+          git clone -q --depth 1 --branch main "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" "$d"
+          rm -rf "$d/v3" && mkdir -p "$d/v3" && cp -r build/web/. "$d/v3/"
+          cd "$d"
+          git add -A v3
+          if git diff --cached --quiet; then echo "Web-Version unverändert"; exit 0; fi
+          git -c user.name="TriCoach Bot" -c user.email="tricoach-bot@users.noreply.github.com" commit -qm "Web-Version 3 veröffentlicht (${GITHUB_SHA::7})"
+          for i in 1 2 3; do git push -q origin HEAD:main && break; git pull -q --rebase origin main; done
       - name: Bericht ablegen
         if: always()
         run: |

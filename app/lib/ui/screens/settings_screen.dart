@@ -33,6 +33,8 @@ class SettingsScreen extends StatelessWidget {
           const SizedBox(height: 12),
           _calendar(context, app, c),
           const SizedBox(height: 12),
+          const _FeedsCard(),
+          const SizedBox(height: 12),
           TriCard(
             title: 'Design',
             icon: Icons.palette_rounded,
@@ -434,6 +436,83 @@ class _ProfileCardState extends State<_ProfileCard> {
           },
           child: const Text('Speichern'),
         ),
+      ]),
+    );
+  }
+}
+
+/// Schule (WebUntis) und TrainingPeaks-Plan über die GitHub-Jobs – derselbe Schlüssel wie in der Web-App
+/// (Einstellungen → Schule) bzw. das GitHub-Secret TRICOACH_KEY.
+class _FeedsCard extends StatefulWidget {
+  const _FeedsCard();
+
+  @override
+  State<_FeedsCard> createState() => _FeedsCardState();
+}
+
+class _FeedsCardState extends State<_FeedsCard> {
+  late final AppState app = AppScope.read(context);
+  late final key = TextEditingController(text: app.tcKey);
+  late final repo = TextEditingController(text: app.tcRepo);
+
+  @override
+  void dispose() {
+    key.dispose();
+    repo.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final app = AppScope.of(context), c = TriColors.of(context);
+    String line(String label, DateTime? at, String? err) =>
+        '$label: ${err ?? (at == null ? 'noch nicht geholt' : 'Stand ${shortDate(at.toLocal())} ${timeTxt(at.toLocal())}')}';
+    return TriCard(
+      title: 'Schule & TrainingPeaks',
+      icon: Icons.school_rounded,
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Text('Stundenplan mit Ausfall, Hausaufgaben und Prüfungen aus WebUntis sowie der Plan deiner Trainerin aus TrainingPeaks. '
+            'Die GitHub-Jobs legen beides verschlüsselt ab – entschlüsselt wird nur hier mit deinem TriCoach-Schlüssel.',
+            style: TextStyle(color: c.muted)),
+        const SizedBox(height: 8),
+        TextField(
+          controller: key,
+          obscureText: true,
+          decoration: const InputDecoration(labelText: 'TriCoach-Schlüssel', hintText: 'wie GitHub-Secret TRICOACH_KEY'),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: repo,
+          decoration: const InputDecoration(labelText: 'GitHub-Repo', hintText: 'besitzer/name'),
+        ),
+        const SizedBox(height: 8),
+        Wrap(spacing: 8, runSpacing: 4, crossAxisAlignment: WrapCrossAlignment.center, children: [
+          FilledButton(
+            onPressed: app.feedsBusy
+                ? null
+                : () async {
+                    final msg = await app.setTcKey(key.text, repo: repo.text);
+                    if (context.mounted && msg.isNotEmpty) showMsg(context, msg);
+                  },
+            child: Text(app.feedsBusy ? 'Hole …' : 'Speichern & holen'),
+          ),
+          if (app.tcKey.isNotEmpty)
+            TextButton.icon(
+              onPressed: app.feedsBusy
+                  ? null
+                  : () async {
+                      final msg = await app.syncFeeds(manual: true);
+                      if (context.mounted && msg.isNotEmpty) showMsg(context, msg);
+                    },
+              icon: const Icon(Icons.sync_rounded),
+              label: const Text('Jetzt holen'),
+            ),
+        ]),
+        if (app.tcKey.isNotEmpty) ...[
+          const SizedBox(height: 6),
+          Text(line('Schule', app.school?.at, app.schoolError), style: TextStyle(color: app.schoolError != null ? c.warn : c.muted, fontSize: 12)),
+          Text(line('TrainingPeaks', app.tpAt, app.tpError), style: TextStyle(color: app.tpError != null ? c.warn : c.muted, fontSize: 12)),
+        ],
       ]),
     );
   }

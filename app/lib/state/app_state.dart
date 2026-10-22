@@ -1,13 +1,20 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter/widgets.dart';
+import 'package:http/http.dart' show ClientException;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config.dart';
 import '../core/fit.dart';
+import '../core/format.dart';
 import '../core/models.dart';
+import '../core/school.dart';
+import '../core/tc_crypto.dart';
+import '../core/tp_plan.dart';
 import '../data/device_calendar_sync.dart';
+import '../data/github_feeds.dart';
 import '../data/health_import.dart';
 import '../data/icu_source.dart';
 import '../data/local_store.dart';
@@ -42,6 +49,17 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
   String? calendarToken;
   String? message;
 
+  // Schule (WebUntis) und TrainingPeaks-Plan – kommen verschlüsselt von den GitHub-Jobs
+  String tcKey = '';
+  String tcRepo = GithubFeeds.defaultRepo;
+  SchoolData? school;
+  String? schoolError;
+  Map<String, bool> hwDone = {};
+  DateTime? tpAt;
+  String? tpError;
+  bool feedsBusy = false;
+  DateTime? _lastFeeds;
+
   SupabaseRemote? _remote;
   RealtimeChannel? _channel;
   StreamSubscription<AuthState>? _authSub;
@@ -65,6 +83,7 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
     final li = await store.meta('watch:last') as String?;
     lastWatchImport = li == null ? null : DateTime.tryParse(li);
     calendarOn = await devCal.enabled;
+    await _loadFeeds();
     await repo.load();
     if (AppConfig.hasBackend) {
       _authSub = Supabase.instance.client.auth.onAuthStateChange.listen((s) {
@@ -134,6 +153,7 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
     await _detach();
     await Supabase.instance.client.auth.signOut();
     await repo.wipe();
+    _resetFeeds();
     await devCal.disable();
     calendarOn = false;
     notifyListeners();
@@ -149,6 +169,7 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
       await Supabase.instance.client.auth.signOut();
     } catch (_) {}
     await repo.wipe();
+    _resetFeeds();
     await devCal.disable();
     calendarOn = false;
     healthOn = false;
@@ -161,6 +182,7 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
   Future<void> refresh() async {
     repo.sync.schedule();
     await importWatch(quiet: true);
+    await syncFeeds();
   }
 
   @override
@@ -276,6 +298,147 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
     final fresh = found.where((a) => !known.contains(a.id)).toList();
     await repo.saveActivities(fresh);
     return (added: fresh.length, known: found.length - fresh.length, broken: broken);
+  }
+
+  // ---------------- Schule & TrainingPeaks (über GitHub) ----------------
+  Future<void> _loadFeeds() async {
+    tcKey = (await store.meta('tc:key') as String?) ?? '';
+    tcRepo = (await store.meta('tc:repo') as String?) ?? GithubFeeds.defaultRepo;
+    final dk = await store.meta('tc:dk');
+    if (dk is Map && tcKey.isNotEmpty && dk['salt'] is String && dk['k'] is String) {
+      TcCrypto.remember(tcKey, dk['salt'] as String, base64.decode(dk['k'] as String));
+    }
+    final sd = await store.meta('school:data');
+    if (sd is Map) {
+      try {
+        school = SchoolData.fromJson(Map<String, dynamic>.from(sd));
+      } catch (_) {}
+    }
+    final hw = await store.meta('hw:done');
+    if (hw is Map) hwDone = {for (final e in hw.entries) '${e.key}': e.value == true};
+    final at = await store.meta('tp:at') as String?;
+    tpAt = at == null ? null : DateTime.tryParse(at);
+  }
+
+  void _resetFeeds() {
+    tcKey = '';
+    tcRepo = GithubFeeds.defaultRepo;
+    school = null;
+    schoolError = null;
+    hwDone = {};
+    tpAt = null;
+    tpError = null;
+    _lastFeeds = null;
+  }
+
+  /// Schlüssel (= GitHub-Secret TRICOACH_KEY) und Repo speichern und sofort abrufen
+  Future<String> setTcKey(String key, {String? repo}) async {
+    final k = key.trim(), r = (repo ?? tcRepo).trim();
+    if (r.isNotEmpty && !GithubFeeds.validRepo(r)) return 'Repo bitte als „besitzer/name“ angeben';
+    if (k != tcKey) await store.setMeta('tc:dk', null);
+    tcKey = k;
+    tcRepo = r.isEmpty ? GithubFeeds.defaultRepo : r;
+    await store.setMeta('tc:key', k.isEmpty ? null : k);
+    await store.setMeta('tc:repo', tcRepo);
+    if (k.isEmpty) {
+      school = null;
+      schoolError = null;
+      tpError = null;
+      await store.setMeta('school:data', null);
+      notifyListeners();
+      return 'Schule & TrainingPeaks getrennt';
+    }
+    notifyListeners();
+    return syncFeeds(manual: true);
+  }
+
+  String _feedErr(Object e) {
+    if (e is TcKeyError) return e.toString();
+    if (e is TimeoutException || e is ClientException) return 'Keine Verbindung zu GitHub – später nochmal';
+    if (e is FormatException) return e.message;
+    return '$e';
+  }
+
+  Future<void> _rememberKey(String txt) async {
+    try {
+      final salt = TcCrypto.saltOf(txt);
+      final dk = await store.meta('tc:dk');
+      if (dk is Map && dk['salt'] == salt) return;
+      final k = await TcCrypto.deriveKey(tcKey, base64.decode(salt));
+      await store.setMeta('tc:dk', {'salt': salt, 'k': base64.encode(k)});
+    } catch (_) {}
+  }
+
+  /// Stundenplan und TrainingPeaks-Plan holen. Ohne [manual] höchstens alle 10 Minuten.
+  Future<String> syncFeeds({bool manual = false}) async {
+    if (tcKey.isEmpty) return manual ? 'Erst den TriCoach-Schlüssel eintragen' : '';
+    if (feedsBusy) return 'Läuft schon …';
+    if (!manual && _lastFeeds != null && DateTime.now().difference(_lastFeeds!) < const Duration(minutes: 10)) return '';
+    feedsBusy = true;
+    notifyListeners();
+    final feeds = GithubFeeds(tcRepo), done = <String>[];
+    try {
+      // Schule
+      try {
+        final txt = await feeds.school();
+        if (txt == null) {
+          schoolError = 'Noch keine Schuldaten – läuft der GitHub-Job „Schule (WebUntis)“?';
+        } else {
+          final d = SchoolData.fromJson(Map<String, dynamic>.from(await TcCrypto.decrypt(txt, tcKey) as Map));
+          await _rememberKey(txt);
+          final before = school;
+          school = d;
+          schoolError = null;
+          await store.setMeta('school:data', d.raw);
+          done.add('Schule (Stand ${timeTxt(d.at.toLocal())})');
+          if (!manual && before != null) {
+            final today = startOfDay(DateTime.now()), to = addDays(today, 2);
+            final n = d.changes(today, to).length;
+            if (n > before.changes(today, to).length) say('Stundenplan: $n Änderung${n == 1 ? '' : 'en'} heute/morgen');
+          }
+        }
+      } catch (e) {
+        schoolError = _feedErr(e);
+      }
+      // TrainingPeaks
+      try {
+        final txt = await feeds.trainingPeaks();
+        if (txt == null) {
+          tpError = 'Noch kein Plan – der iCal-Link deiner Trainerin fehlt im GitHub-Job „TrainingPeaks-Plan“.';
+        } else {
+          final o = Map<String, dynamic>.from(await TcCrypto.decrypt(txt, tcKey) as Map);
+          await _rememberKey(txt);
+          final ics = '${o['ics'] ?? ''}';
+          if (!ics.contains('BEGIN:VCALENDAR')) throw const FormatException('Plan ist keine Kalenderdatei');
+          final known = {for (final x in (await store.meta('tp:ids') as List? ?? const [])) '$x'};
+          final r = await repo.importTpPlan(tpPlanFromIcs(ics), known);
+          await store.setMeta('tp:ids', r.ids.toList());
+          tpAt = DateTime.tryParse('${o['at']}');
+          await store.setMeta('tp:at', tpAt?.toIso8601String());
+          tpError = null;
+          final ch = [if (r.added > 0) '${r.added} neu', if (r.changed > 0) '${r.changed} geändert', if (r.removed > 0) '${r.removed} entfernt'];
+          done.add('TrainingPeaks ${ch.isEmpty ? 'unverändert' : ch.join(', ')}');
+          if (!manual && ch.isNotEmpty && known.isNotEmpty) say('Trainerin hat den Plan geändert: ${ch.join(', ')}');
+        }
+      } catch (e) {
+        tpError = _feedErr(e);
+      }
+      _lastFeeds = DateTime.now();
+    } finally {
+      feedsBusy = false;
+      notifyListeners();
+    }
+    if (done.isNotEmpty) return 'Aktualisiert: ${done.join(' · ')}';
+    return [schoolError, tpError].whereType<String>().join(' · ');
+  }
+
+  /// Hausaufgabe abhaken / wieder öffnen (eigener Haken, unabhängig von WebUntis)
+  Future<void> toggleHomework(Homework h) async {
+    final s = school;
+    if (s == null) return;
+    hwDone['u${h.id}'] = !s.isDone(h, hwDone);
+    await store.setMeta('hw:done', Map<String, Object?>.from(hwDone));
+    notifyListeners();
   }
 
   // ---------------- Kalender ----------------

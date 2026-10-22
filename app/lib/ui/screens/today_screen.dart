@@ -5,6 +5,7 @@ import '../../core/format.dart';
 import '../../core/sport.dart';
 import '../../state/app_state.dart';
 import '../charts.dart';
+import '../school_card.dart';
 import '../theme.dart';
 import '../widgets.dart';
 import 'log_screen.dart';
@@ -64,6 +65,10 @@ class TodayScreen extends StatelessWidget {
             if (evening) ...[dayCard(tomorrow, 'Morgen'), const SizedBox(height: 12)],
             dayCard(today, 'Heute'),
             const SizedBox(height: 12),
+            if (app.school != null || app.schoolError != null) ...[
+              SchoolCard(day: evening ? tomorrow : today, title: evening ? 'Schule morgen' : 'Schule heute'),
+              const SizedBox(height: 12),
+            ],
             GridView.count(
               crossAxisCount: MediaQuery.sizeOf(context).width > 700 ? 4 : 2,
               shrinkWrap: true,
