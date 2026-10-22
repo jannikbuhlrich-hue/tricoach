@@ -124947,9 +124947,9 @@ if(q)n.push("Entfall")
 else if(r==="irregular"){r=s.Q
 n.push(r.length!==0?r:"\xc4nderung")}else{r=s.Q
 if(r.length!==0)n.push(r)}r=s.r
-if(r.length!==0)n.push("Raum "+r+" \u2192 "+s.f)
+if(r.length!==0)n.push("Raum "+s.f+" statt "+r)
 r=s.x
-if(r.length!==0)n.push(r+" \u2192 "+s.w)
+if(r.length!==0)n.push(s.w+" statt "+r)
 r=s.z
 if(r.length!==0)n.push(r)
 m=B.b.bP(n," \xb7 ")
@@ -125193,7 +125193,7 @@ r=A.hu(h,h,h,!0,!0,h,h,1,h,h,h,!1,h,!1,h,h,h,h,!0,h,h,h,h,h,B.aoD,h,h,h,1,h,!0)
 if(s==null)e=B.QL
 else{e=e.r
 q=A.a0("Code von deinem Coach eingeben. Danach sieht er deine Einheiten und kann dir Trainings planen.",h,h,h,A.b8(h,h,e,h,h,h,h,h,h,h,h,h,h,h,h,h,h,!0,h,h,h,h,h,h,h,h),h,h,h)
-p=A.ch(A.dD(h,B.ar,!1,h,!0,B.B,h,A.dO(),i.d,h,h,h,h,h,2,B.Zo,B.N,!0,h,!0,h,!1,h,B.ad,h,h,h,h,h,h,h,h,1,h,h,!1,"\u2022",h,h,h,h,h,!1,h,h,!1,h,!0,h,B.aq,h,h,h,h,h,h,h,h,h,h,h,h,!0,B.Q,h,B.ajd,h,h,h,h),1)
+p=A.ch(A.dD(h,B.ar,!1,h,!0,B.B,h,A.dO(),i.d,h,h,h,h,h,2,B.Zp,B.N,!0,h,!0,h,!1,h,B.ad,h,h,h,h,h,h,h,h,1,h,h,!1,"\u2022",h,h,h,h,h,!1,h,h,!1,h,!0,h,B.aq,h,h,h,h,h,h,h,h,h,h,h,h,!0,B.Q,h,B.ajd,h,h,h,h),1)
 o=t.p
 p=A.bn(A.b([q,B.aL,A.bM(A.b([p,B.d1,A.hW(B.hB,i.r?h:new A.aKs(i,s,a),h)],o),B.q,B.k,B.n,0,h)],o),B.aQ,B.k,B.n,0,B.w)
 e=A.b([A.a0("Erzeuge einen Code und schick ihn deinem Athleten. Jeder Code gilt 14 Tage und einmal.",h,h,h,A.b8(h,h,e,h,h,h,h,h,h,h,h,h,h,h,h,h,h,!0,h,h,h,h,h,h,h,h),h,h,h),B.aL],o)
@@ -125250,7 +125250,7 @@ return A.p(null,r)}})
 return A.q($async$$0,r)},
 $S:3}
 A.aKt.prototype={
-$0(){return A.xE(new A.pr("Verbinde dich mit mir in TriCoach: Einstellungen \u2192 Coach \u2192 Code "+A.f(this.a.e)))},
+$0(){return A.xE(new A.pr("Verbinde dich mit mir in TriCoach: Einstellungen \u203a Coach \u203a Code "+A.f(this.a.e)))},
 $S:0}
 A.aKu.prototype={
 $0(){var s=this.a
@@ -125398,7 +125398,7 @@ $S:778}
 A.aIv.prototype={
 $2(a,b){var s,r,q,p=this,o=null,n=A.a0("Einheit f\xfcr "+p.b.a.d,o,o,o,o,o,o,o),m=t.p,l=A.b([],m)
 for(s=p.a,r=0;r<5;++r){q=B.dg[r]
-l.push(A.ahO(o,A.a0(q.c,o,o,o,o,o,o,o),new A.aIr(s,b,q),s.a===q,o))}l=A.aDv(A.bn(A.b([A.lo(B.bW,l,0,6),B.aL,A.nS(B.kw,A.a0(A.b4j(s.b),o,o,o,o,o,o,o),new A.aIs(s,a,b)),B.aL,A.dD(o,B.ar,!1,o,!0,B.B,o,A.dO(),p.c,o,o,o,o,o,2,B.Za,B.N,!0,o,!0,o,!1,o,B.ad,o,o,o,o,o,o,o,o,1,o,o,!1,"\u2022",o,o,o,o,o,!1,o,o,!1,o,!0,o,B.aq,o,o,o,o,o,o,o,o,o,o,o,o,!0,B.Q,o,B.aw,o,o,o,o),B.aL,A.dD(o,B.ar,!1,o,!0,B.B,o,A.dO(),p.d,o,o,o,o,o,2,B.vu,B.N,!0,o,!0,o,!1,o,B.ad,o,o,o,o,o,o,o,o,1,o,o,!1,"\u2022",o,o,o,o,o,!1,o,o,!1,o,!0,o,B.aq,o,o,o,o,o,o,o,o,o,o,o,o,!0,B.Q,o,B.aw,o,o,o,o),B.aL,A.dD(o,B.ar,!1,o,!0,B.B,o,A.dO(),p.e,o,o,o,o,o,2,B.Zd,B.N,!0,o,!0,o,!1,o,B.ad,o,o,o,o,o,o,o,o,6,2,o,!1,"\u2022",o,o,o,o,o,!1,o,o,!1,o,!0,o,B.aq,o,o,o,o,o,o,o,o,o,o,o,o,!0,B.Q,o,B.aw,o,o,o,o)],m),B.q,B.k,B.aK,0,B.w),o,B.aB)
+l.push(A.ahO(o,A.a0(q.c,o,o,o,o,o,o,o),new A.aIr(s,b,q),s.a===q,o))}l=A.aDv(A.bn(A.b([A.lo(B.bW,l,0,6),B.aL,A.nS(B.kw,A.a0(A.b4j(s.b),o,o,o,o,o,o,o),new A.aIs(s,a,b)),B.aL,A.dD(o,B.ar,!1,o,!0,B.B,o,A.dO(),p.c,o,o,o,o,o,2,B.Za,B.N,!0,o,!0,o,!1,o,B.ad,o,o,o,o,o,o,o,o,1,o,o,!1,"\u2022",o,o,o,o,o,!1,o,o,!1,o,!0,o,B.aq,o,o,o,o,o,o,o,o,o,o,o,o,!0,B.Q,o,B.aw,o,o,o,o),B.aL,A.dD(o,B.ar,!1,o,!0,B.B,o,A.dO(),p.d,o,o,o,o,o,2,B.vu,B.N,!0,o,!0,o,!1,o,B.ad,o,o,o,o,o,o,o,o,1,o,o,!1,"\u2022",o,o,o,o,o,!1,o,o,!1,o,!0,o,B.aq,o,o,o,o,o,o,o,o,o,o,o,o,!0,B.Q,o,B.aw,o,o,o,o),B.aL,A.dD(o,B.ar,!1,o,!0,B.B,o,A.dO(),p.e,o,o,o,o,o,2,B.Ze,B.N,!0,o,!0,o,!1,o,B.ad,o,o,o,o,o,o,o,o,6,2,o,!1,"\u2022",o,o,o,o,o,!1,o,o,!1,o,!0,o,B.aq,o,o,o,o,o,o,o,o,o,o,o,o,!0,B.Q,o,B.aw,o,o,o,o)],m),B.q,B.k,B.aK,0,B.w),o,B.aB)
 return A.b0R(A.b([A.fG(B.qA,o,o,new A.aIt(a),o,o),A.hW(B.aoC,new A.aIu(a),o)],m),l,n)},
 $S:779}
 A.aIr.prototype={
@@ -125519,7 +125519,7 @@ m=A.a0(o.c,j,j,j,j,j,j,j)
 l=o.d
 i.push(A.jW(!1,B.a2,j,j,!0,j,j,j,!0,j,B.YQ,j,j,j,j,new A.aXE(k,o),!1,j,j,j,j,A.a0(l.length!==0?l:o.a,j,j,j,j,j,j,j),j,m,j,j,j))}B.b.M(n,i)}else{i=A.d8(B.e2,i.x,j,j)
 l=A.a0(m.c,j,j,j,B.hz,j,j,j)
-B.b.M(n,A.b([A.jW(!1,B.a2,j,j,!0,j,j,j,!0,j,i,j,j,j,j,j,!1,j,j,j,j,A.a0(m.d,j,j,j,j,j,j,j),j,l,j,A.fG(B.aoq,j,j,new A.aXF(k),j,j),j),B.aL,A.dD(j,B.a7W,!0,j,!0,B.B,j,A.dO(),k.e,j,j,j,j,j,2,B.Ze,B.N,!0,j,!0,j,!1,j,B.ad,j,j,j,j,j,j,j,j,1,j,j,!1,"\u2022",j,new A.aXG(k),j,j,j,!1,j,j,!1,j,!0,j,B.aq,j,j,j,j,j,j,j,j,j,j,j,j,!0,B.Q,j,B.aw,j,j,j,j),B.ei,A.dD(j,B.a7m,!1,j,!0,B.B,j,A.dO(),k.f,j,j,j,j,j,2,B.Zl,B.N,!0,j,!0,j,!1,j,B.ad,j,j,j,j,j,j,j,j,1,j,j,!0,"\u2022",j,new A.aXH(k),j,new A.aXI(k,r),j,!1,j,j,!1,j,!0,j,B.aq,j,j,j,j,j,j,j,j,j,j,j,j,!0,B.Q,j,B.aw,j,j,j,j),B.aL,A.a0("Das Passwort wird nur einmal benutzt, um \u2013 wie die Untis-App \u2013 einen App-Schl\xfcssel zu bekommen. Gespeichert wird es nicht.",j,j,j,A.b8(j,j,q,j,j,j,j,j,j,j,j,12,j,j,j,j,j,!0,j,j,j,j,j,j,j,j),j,j,j)],o))}B.b.M(p,n)}else B.b.M(p,A.b([A.a0("Meldest du dich bei WebUntis mit Microsoft, IServ o. \xc4. an? Dann so:",j,j,j,A.b8(j,j,i.f,j,j,j,j,j,j,j,j,j,j,j,B.fT,j,j,!0,j,j,j,j,j,j,j,j),j,j,j),B.hy,A.a0("1. WebUntis im Browser \xf6ffnen und anmelden\n2. Oben rechts auf dein Profil \u2192 Reiter \u201eFreigaben\u201c\n3. Bei \u201eZugriff \xfcber Untis Mobile\u201c auf \u201eAnzeigen\u201c \u2192 Link bzw. Daten kopieren\n4. Hier einf\xfcgen \u2192 Verbinden",j,j,j,A.b8(j,j,q,j,j,j,j,j,j,j,j,j,j,j,j,j,1.4,!0,j,j,j,j,j,j,j,j),j,j,j),B.a_,A.dD(j,B.ar,!1,j,!0,B.B,j,A.dO(),k.r,j,j,j,j,j,2,A.kM(j,j,j,j,j,j,j,j,!0,j,j,j,j,j,j,j,j,j,j,j,j,j,j,j,j,j,j,j,j,j,j,"untis://setschool?url=\u2026&school=\u2026&user=\u2026&key=\u2026",j,j,j,j,j,j,j,j,"Link oder Daten aus WebUntis",!0,!0,!1,j,j,j,j,j,j,j,j,A.f3(j,j,B.vs,j,j,new A.aXJ(k),j,j,"Einf\xfcgen",j),j,j,j,j,j),B.N,!0,j,!0,j,!1,j,B.ad,j,j,j,j,j,j,j,j,4,1,j,!1,"\u2022",j,new A.aXK(k),j,j,j,!1,j,j,!1,j,!0,j,B.aq,j,j,j,j,j,j,j,j,j,j,j,j,!0,B.Q,j,B.aw,j,j,j,j)],o))
+B.b.M(n,A.b([A.jW(!1,B.a2,j,j,!0,j,j,j,!0,j,i,j,j,j,j,j,!1,j,j,j,j,A.a0(m.d,j,j,j,j,j,j,j),j,l,j,A.fG(B.aoq,j,j,new A.aXF(k),j,j),j),B.aL,A.dD(j,B.a7W,!0,j,!0,B.B,j,A.dO(),k.e,j,j,j,j,j,2,B.Zf,B.N,!0,j,!0,j,!1,j,B.ad,j,j,j,j,j,j,j,j,1,j,j,!1,"\u2022",j,new A.aXG(k),j,j,j,!1,j,j,!1,j,!0,j,B.aq,j,j,j,j,j,j,j,j,j,j,j,j,!0,B.Q,j,B.aw,j,j,j,j),B.ei,A.dD(j,B.a7m,!1,j,!0,B.B,j,A.dO(),k.f,j,j,j,j,j,2,B.Zm,B.N,!0,j,!0,j,!1,j,B.ad,j,j,j,j,j,j,j,j,1,j,j,!0,"\u2022",j,new A.aXH(k),j,new A.aXI(k,r),j,!1,j,j,!1,j,!0,j,B.aq,j,j,j,j,j,j,j,j,j,j,j,j,!0,B.Q,j,B.aw,j,j,j,j),B.aL,A.a0("Das Passwort wird nur einmal benutzt, um \u2013 wie die Untis-App \u2013 einen App-Schl\xfcssel zu bekommen. Gespeichert wird es nicht.",j,j,j,A.b8(j,j,q,j,j,j,j,j,j,j,j,12,j,j,j,j,j,!0,j,j,j,j,j,j,j,j),j,j,j)],o))}B.b.M(p,n)}else B.b.M(p,A.b([A.a0("Meldest du dich bei WebUntis mit Microsoft, IServ o. \xc4. an? Dann so:",j,j,j,A.b8(j,j,i.f,j,j,j,j,j,j,j,j,j,j,j,B.fT,j,j,!0,j,j,j,j,j,j,j,j),j,j,j),B.hy,A.a0("1. WebUntis im Browser \xf6ffnen und anmelden\n2. Oben rechts auf dein Profil \u203a Reiter \u201eFreigaben\u201c\n3. Bei \u201eZugriff \xfcber Untis Mobile\u201c auf \u201eAnzeigen\u201c \u203a Link bzw. Daten kopieren\n4. Hier einf\xfcgen \u203a Verbinden",j,j,j,A.b8(j,j,q,j,j,j,j,j,j,j,j,j,j,j,j,j,1.4,!0,j,j,j,j,j,j,j,j),j,j,j),B.a_,A.dD(j,B.ar,!1,j,!0,B.B,j,A.dO(),k.r,j,j,j,j,j,2,A.kM(j,j,j,j,j,j,j,j,!0,j,j,j,j,j,j,j,j,j,j,j,j,j,j,j,j,j,j,j,j,j,j,"untis://setschool?url=\u2026&school=\u2026&user=\u2026&key=\u2026",j,j,j,j,j,j,j,j,"Link oder Daten aus WebUntis",!0,!0,!1,j,j,j,j,j,j,j,j,A.f3(j,j,B.vs,j,j,new A.aXJ(k),j,j,"Einf\xfcgen",j),j,j,j,j,j),B.N,!0,j,!0,j,!1,j,B.ad,j,j,j,j,j,j,j,j,4,1,j,!1,"\u2022",j,new A.aXK(k),j,j,j,!1,j,j,!1,j,!0,j,B.aq,j,j,j,j,j,j,j,j,j,j,j,j,!0,B.Q,j,B.aw,j,j,j,j)],o))
 p.push(B.dl)
 if(k.at||k.y!=null){i=r?k.gMR():j
 q=A.b1M(j,j,B.qj,j)
@@ -125678,7 +125678,7 @@ F(a){var s,r,q,p,o,n=this,m=null,l=t.G.a(A.D(a).c.h(0,A.bb(t.W)))
 l.toString
 s=A.hu(m,m,m,!0,!0,m,m,1,m,m,m,!1,m,!1,m,m,m,m,!0,m,m,m,m,m,B.aor,m,m,m,1,m,!0)
 l=l.r
-r=A.a0("1. app.trainingpeaks.com \xf6ffnen \u2192 Einstellungen (Zahnrad) \u2192 \u201eCalendar\u201c\n2. Bei \u201eiCal Calendar Feeds\u201c den Link kopieren\n3. Hier einf\xfcgen \u2192 Verbinden",m,m,m,A.b8(m,m,l,m,m,m,m,m,m,m,m,m,m,m,m,m,1.4,!0,m,m,m,m,m,m,m,m),m,m,m)
+r=A.a0("1. app.trainingpeaks.com \xf6ffnen \u203a Einstellungen (Zahnrad) \u203a \u201eCalendar\u201c\n2. Bei \u201eiCal Calendar Feeds\u201c den Link kopieren\n3. Hier einf\xfcgen \u203a Verbinden",m,m,m,A.b8(m,m,l,m,m,m,m,m,m,m,m,m,m,m,m,m,1.4,!0,m,m,m,m,m,m,m,m),m,m,m)
 l=A.a0("Geplante Einheiten, \xc4nderungen und L\xf6schungen deines Trainers landen dann automatisch in TriCoach.",m,m,m,A.b8(m,m,l,m,m,m,m,m,m,m,m,12,m,m,m,m,m,!0,m,m,m,m,m,m,m,m),m,m,m)
 q=n.d
 p=A.dD(m,B.ar,!0,m,!0,B.B,m,A.dO(),q,m,m,m,m,m,2,A.kM(m,m,m,m,m,m,m,m,!0,m,m,m,m,m,m,m,m,m,m,m,m,m,m,m,m,m,m,m,m,m,m,"webcal://\u2026trainingpeaks.com/\u2026",m,m,m,m,m,m,m,m,"iCal-Link",!0,!0,!1,m,m,m,m,m,m,m,m,A.f3(m,m,B.vs,m,m,new A.aWW(n),m,m,"Einf\xfcgen",m),m,m,m,m,m),B.N,!0,m,!0,m,!1,m,B.ad,m,m,m,m,B.mm,m,m,m,1,m,m,!1,"\u2022",m,new A.aWX(n),m,new A.aWY(n),m,!1,m,m,!1,m,!0,m,B.aq,m,m,m,m,m,m,m,m,m,m,m,m,!0,B.Q,m,B.aw,m,m,m,m)
@@ -125724,7 +125724,7 @@ F(a){var s,r=null,q=t.G.a(A.D(a).c.h(0,A.bb(t.W)))
 q.toString
 q=new A.aqq(q)
 s=t.p
-return A.fR(A.hu(r,r,r,!0,!0,r,r,1,r,r,r,!1,r,!1,r,r,r,r,!0,r,r,r,r,r,B.aof,r,r,r,1,r,!0),A.dz(new A.d2(B.OF,A.jk(A.b([new A.cF("Open-Source-Lizenzen",B.v3,r,A.bn(A.b([q.$1("TriCoach baut auf freier Software auf (u. a. Flutter, Supabase, Sembast, die Schrift Roboto). Alle Bausteine erlauben die Nutzung in kommerziellen Apps; ihre Lizenzen sind hier vollst\xe4ndig aufgef\xfchrt."),new A.dy(B.hW,r,r,A.amq(B.YZ,B.aox,new A.aqp(a)),r)],s),B.aQ,B.k,B.n,0,B.w),B.a7,r),B.a_,new A.cF("Marken",B.Ya,r,A.bn(A.b([q.$1("Garmin, Forerunner und Garmin Connect, TrainingPeaks, WebUntis und Untis, intervals.icu, Apple Health, HealthKit und Siri, Health Connect und Android sowie Zwift sind Marken ihrer jeweiligen Inhaber."),q.$1("TriCoach ist ein unabh\xe4ngiges Projekt und steht mit keinem dieser Unternehmen in Verbindung. Die Namen werden nur genannt, um zu beschreiben, womit TriCoach zusammenarbeitet. TriCoach verarbeitet dabei ausschlie\xdflich Daten, die du selbst freigibst."),q.$1("Daten von Garmin-Ger\xe4ten sind in der App als \u201eGarmin \u2026\u201c gekennzeichnet.")],s),B.af,B.k,B.n,0,B.w),B.a7,r),B.a_,new A.cF("Schule (Beta)",B.e2,r,A.bn(A.b([q.$1("Die WebUntis-Verbindung meldet sich mit deinen eigenen Zugangsdaten so an wie die Untis-App. Sie ist keine offizielle Schnittstelle der Untis GmbH, kann sich \xe4ndern oder ausfallen und l\xe4sst sich jederzeit trennen."),q.$1("Verbindlich sind immer die Angaben in WebUntis und die Ank\xfcndigungen deiner Schule."),q.$1("Dein WebUntis-Passwort wird nicht gespeichert. Gespeichert wird nur der App-Schl\xfcssel \u2013 auf dem Server, nicht lesbar f\xfcr die App, und er wird gel\xf6scht, wenn du die Verbindung trennst oder deinen Account l\xf6schst. Abrufe sind auf h\xf6chstens alle 15 Minuten begrenzt.")],s),B.af,B.k,B.n,0,B.w),B.a7,r),B.a_,new A.cF("Training & Gesundheit",B.v9,r,q.$1("Form, Belastung, Prognosen und Empfehlungen in TriCoach sind Rechenwerte zur Orientierung. Sie ersetzen keine \xe4rztliche Untersuchung oder Beratung. Bei Schmerzen, Krankheit oder Unsicherheit: Training anpassen und \xe4rztlich abkl\xe4ren."),B.a7,r),B.a_,new A.cF("Datenschutz in K\xfcrze",B.Yr,r,A.bn(A.b([q.$1("Deine Daten liegen auf deinem Ger\xe4t und \u2013 mit Account \u2013 auf Servern in der EU (Supabase, Irland). \xdcbertragung immer verschl\xfcsselt."),q.$1("Keine Werbung, kein Tracking, keine Weitergabe. Die App l\xe4dt nichts von Google-Servern (Schriften und Programmteile sind eingebaut)."),q.$1("Gesundheitsdaten (z. B. Puls) verarbeitet TriCoach nur mit deiner Einwilligung aus der Einf\xfchrung. Du kannst Verbindungen jederzeit trennen und deinen Account samt allen Daten unter Einstellungen \u2192 Account l\xf6schen.")],s),B.af,B.k,B.n,0,B.w),B.a7,r)],s),B.ul,r,!1),r),r,r),r,r,r)}}
+return A.fR(A.hu(r,r,r,!0,!0,r,r,1,r,r,r,!1,r,!1,r,r,r,r,!0,r,r,r,r,r,B.aof,r,r,r,1,r,!0),A.dz(new A.d2(B.OF,A.jk(A.b([new A.cF("Open-Source-Lizenzen",B.v3,r,A.bn(A.b([q.$1("TriCoach baut auf freier Software auf (u. a. Flutter, Supabase, Sembast, die Schrift Roboto). Alle Bausteine erlauben die Nutzung in kommerziellen Apps; ihre Lizenzen sind hier vollst\xe4ndig aufgef\xfchrt."),new A.dy(B.hW,r,r,A.amq(B.YZ,B.aox,new A.aqp(a)),r)],s),B.aQ,B.k,B.n,0,B.w),B.a7,r),B.a_,new A.cF("Marken",B.Ya,r,A.bn(A.b([q.$1("Garmin, Forerunner und Garmin Connect, TrainingPeaks, WebUntis und Untis, intervals.icu, Apple Health, HealthKit und Siri, Health Connect und Android sowie Zwift sind Marken ihrer jeweiligen Inhaber."),q.$1("TriCoach ist ein unabh\xe4ngiges Projekt und steht mit keinem dieser Unternehmen in Verbindung. Die Namen werden nur genannt, um zu beschreiben, womit TriCoach zusammenarbeitet. TriCoach verarbeitet dabei ausschlie\xdflich Daten, die du selbst freigibst."),q.$1("Daten von Garmin-Ger\xe4ten sind in der App als \u201eGarmin \u2026\u201c gekennzeichnet.")],s),B.af,B.k,B.n,0,B.w),B.a7,r),B.a_,new A.cF("Schule (Beta)",B.e2,r,A.bn(A.b([q.$1("Die WebUntis-Verbindung meldet sich mit deinen eigenen Zugangsdaten so an wie die Untis-App. Sie ist keine offizielle Schnittstelle der Untis GmbH, kann sich \xe4ndern oder ausfallen und l\xe4sst sich jederzeit trennen."),q.$1("Verbindlich sind immer die Angaben in WebUntis und die Ank\xfcndigungen deiner Schule."),q.$1("Dein WebUntis-Passwort wird nicht gespeichert. Gespeichert wird nur der App-Schl\xfcssel \u2013 auf dem Server, nicht lesbar f\xfcr die App, und er wird gel\xf6scht, wenn du die Verbindung trennst oder deinen Account l\xf6schst. Abrufe sind auf h\xf6chstens alle 15 Minuten begrenzt.")],s),B.af,B.k,B.n,0,B.w),B.a7,r),B.a_,new A.cF("Training & Gesundheit",B.v9,r,q.$1("Form, Belastung, Prognosen und Empfehlungen in TriCoach sind Rechenwerte zur Orientierung. Sie ersetzen keine \xe4rztliche Untersuchung oder Beratung. Bei Schmerzen, Krankheit oder Unsicherheit: Training anpassen und \xe4rztlich abkl\xe4ren."),B.a7,r),B.a_,new A.cF("Datenschutz in K\xfcrze",B.Yr,r,A.bn(A.b([q.$1("Deine Daten liegen auf deinem Ger\xe4t und \u2013 mit Account \u2013 auf Servern in der EU (Supabase, Irland). \xdcbertragung immer verschl\xfcsselt."),q.$1("Keine Werbung, kein Tracking, keine Weitergabe. Die App l\xe4dt nichts von Google-Servern (Schriften und Programmteile sind eingebaut)."),q.$1("Gesundheitsdaten (z. B. Puls) verarbeitet TriCoach nur mit deiner Einwilligung aus der Einf\xfchrung. Du kannst Verbindungen jederzeit trennen und deinen Account samt allen Daten unter Einstellungen \u203a Account l\xf6schen.")],s),B.af,B.k,B.n,0,B.w),B.a7,r)],s),B.ul,r,!1),r),r,r),r,r,r)}}
 A.aqq.prototype={
 $1(a){var s=null
 return new A.aF(B.U5,A.a0(a,s,s,s,A.b8(s,s,this.a.r,s,s,s,s,s,s,s,s,s,s,s,s,s,1.4,!0,s,s,s,s,s,s,s,s),s,s,s),s)},
@@ -125943,7 +125943,7 @@ p.push(B.a_)
 o=h.a.c
 if(!(o!=null&&o.ay!=="manual")){o=h.e
 o===$&&A.a()
-p.push(A.bM(A.b([A.ch(A.nS(B.kw,A.a0(A.n4(o),g,g,g,g,g,g,g),h.gaz2()),1),B.d1,A.ch(A.nS(B.vr,A.a0(A.rT(h.e),g,g,g,g,g,g,g),h.gaz3()),1),B.d1,A.ch(A.dD(g,B.ar,!1,g,!0,B.B,g,A.dO(),h.y,g,g,g,g,g,2,B.Zk,B.N,!0,g,!0,g,!1,g,B.ad,g,g,g,g,B.dp,g,g,g,1,g,g,!1,f,g,new A.aPz(h),g,g,g,!1,g,g,!1,g,!0,g,B.aq,g,g,g,g,g,g,g,g,g,g,g,g,!0,B.Q,g,B.aw,g,g,g,g),1)],q),B.q,B.k,B.n,0,g))}if(h.d===B.aX){o=A.a0("Wo geschwommen?",g,g,g,A.b8(g,g,e.r,g,g,g,g,g,g,g,g,g,g,g,g,g,g,!0,g,g,g,g,g,g,g,g),g,g,g)
+p.push(A.bM(A.b([A.ch(A.nS(B.kw,A.a0(A.n4(o),g,g,g,g,g,g,g),h.gaz2()),1),B.d1,A.ch(A.nS(B.vr,A.a0(A.rT(h.e),g,g,g,g,g,g,g),h.gaz3()),1),B.d1,A.ch(A.dD(g,B.ar,!1,g,!0,B.B,g,A.dO(),h.y,g,g,g,g,g,2,B.Zl,B.N,!0,g,!0,g,!1,g,B.ad,g,g,g,g,B.dp,g,g,g,1,g,g,!1,f,g,new A.aPz(h),g,g,g,!1,g,g,!1,g,!0,g,B.aq,g,g,g,g,g,g,g,g,g,g,g,g,!0,B.Q,g,B.aw,g,g,g,g),1)],q),B.q,B.k,B.n,0,g))}if(h.d===B.aX){o=A.a0("Wo geschwommen?",g,g,g,A.b8(g,g,e.r,g,g,g,g,g,g,g,g,g,g,g,g,g,g,!0,g,g,g,g,g,g,g,g),g,g,g)
 l=A.b([],t.Ch)
 for(k=t.S5,n=0;n<3;++n){j=B.zc[n]
 l.push(new A.cW(j,g,A.a0(j.d,g,g,g,g,g,g,g),k))}k=t.W4
@@ -125959,7 +125959,7 @@ l=A.b([B.dl,A.bM(A.b([A.ch(A.b33(A.di(A.b([A.di(g,g,g,g,g,g,g,g,g,A.b8(g,g,e.r,g
 k=h.ay
 if(k.length===0)l.push(A.a0("Z. B. Kniebeuge 3 \xd7 10 mit 40 kg, Plank 3 \xd7 45 s.",g,g,g,A.b8(g,g,o,g,g,g,g,g,g,g,g,13,g,g,g,g,g,!0,g,g,g,g,g,g,g,g),g,g,g))
 for(o=k.length,n=0;n<k.length;k.length===o||(0,A.v)(k),++n){i=k[n]
-l.push(new A.aF(B.U6,A.bM(A.b([new A.f1(4,B.bn,A.dD(g,B.ar,!1,g,!0,B.B,g,A.dO(),i.a,g,g,g,g,g,2,B.Zj,B.N,!0,g,!0,g,!1,g,B.ad,g,g,g,g,g,g,g,g,1,g,g,!1,f,g,g,g,g,g,!1,g,g,!1,g,!0,g,B.aq,g,g,g,g,g,g,g,g,g,g,g,g,!0,B.Q,g,B.aw,g,g,g,g),g),B.d0,new A.f1(2,B.bn,A.dD(g,B.ar,!1,g,!0,B.B,g,A.dO(),i.b,g,g,g,g,g,2,B.Zg,B.N,!0,g,!0,g,!1,g,B.ad,g,g,g,g,B.dm,g,g,g,1,g,g,!1,f,g,g,g,g,g,!1,g,g,!1,g,!0,g,B.aq,g,g,g,g,g,g,g,g,g,g,g,g,!0,B.Q,g,B.aw,g,g,g,g),g),B.d0,new A.f1(2,B.bn,A.dD(g,B.ar,!1,g,!0,B.B,g,A.dO(),i.c,g,g,g,g,g,2,B.Zc,B.N,!0,g,!0,g,!1,g,B.ad,g,g,g,g,g,g,g,g,1,g,g,!1,f,g,g,g,g,g,!1,g,g,!1,g,!0,g,B.aq,g,g,g,g,g,g,g,g,g,g,g,g,!0,B.Q,g,B.aw,g,g,g,g),g),B.d0,new A.f1(2,B.bn,A.dD(g,B.ar,!1,g,!0,B.B,g,A.dO(),i.d,g,g,g,g,g,2,B.Zm,B.N,!0,g,!0,g,!1,g,B.ad,g,g,g,g,B.ml,g,g,g,1,g,g,!1,f,g,g,g,g,g,!1,g,g,!1,g,!0,g,B.aq,g,g,g,g,g,g,g,g,g,g,g,g,!0,B.Q,g,B.aw,g,g,g,g),g),A.f3(g,g,B.vn,g,g,new A.aPE(h,i),g,g,"\xdcbung entfernen",g)],q),B.q,B.k,B.n,0,g),g))}B.b.M(p,l)}p.push(B.dl)
+l.push(new A.aF(B.U6,A.bM(A.b([new A.f1(4,B.bn,A.dD(g,B.ar,!1,g,!0,B.B,g,A.dO(),i.a,g,g,g,g,g,2,B.Zk,B.N,!0,g,!0,g,!1,g,B.ad,g,g,g,g,g,g,g,g,1,g,g,!1,f,g,g,g,g,g,!1,g,g,!1,g,!0,g,B.aq,g,g,g,g,g,g,g,g,g,g,g,g,!0,B.Q,g,B.aw,g,g,g,g),g),B.d0,new A.f1(2,B.bn,A.dD(g,B.ar,!1,g,!0,B.B,g,A.dO(),i.b,g,g,g,g,g,2,B.Zh,B.N,!0,g,!0,g,!1,g,B.ad,g,g,g,g,B.dm,g,g,g,1,g,g,!1,f,g,g,g,g,g,!1,g,g,!1,g,!0,g,B.aq,g,g,g,g,g,g,g,g,g,g,g,g,!0,B.Q,g,B.aw,g,g,g,g),g),B.d0,new A.f1(2,B.bn,A.dD(g,B.ar,!1,g,!0,B.B,g,A.dO(),i.c,g,g,g,g,g,2,B.Zd,B.N,!0,g,!0,g,!1,g,B.ad,g,g,g,g,g,g,g,g,1,g,g,!1,f,g,g,g,g,g,!1,g,g,!1,g,!0,g,B.aq,g,g,g,g,g,g,g,g,g,g,g,g,!0,B.Q,g,B.aw,g,g,g,g),g),B.d0,new A.f1(2,B.bn,A.dD(g,B.ar,!1,g,!0,B.B,g,A.dO(),i.d,g,g,g,g,g,2,B.Zn,B.N,!0,g,!0,g,!1,g,B.ad,g,g,g,g,B.ml,g,g,g,1,g,g,!1,f,g,g,g,g,g,!1,g,g,!1,g,!0,g,B.aq,g,g,g,g,g,g,g,g,g,g,g,g,!0,B.Q,g,B.aw,g,g,g,g),g),A.f3(g,g,B.vn,g,g,new A.aPE(h,i),g,g,"\xdcbung entfernen",g)],q),B.q,B.k,B.n,0,g),g))}B.b.M(p,l)}p.push(B.dl)
 e=A.ch(A.a0("Anstrengung (RPE)",1,B.am,g,A.b8(g,g,e.r,g,g,g,g,g,g,g,g,g,g,g,g,g,g,!0,g,g,g,g,g,g,g,g),g,g,g),1)
 o=h.r
 p.push(A.bM(A.b([e,B.d1,new A.eA(1,B.bo,A.a0(""+o+" \xb7 "+B.a79[o],1,B.am,g,B.d3,g,g,g),g)],q),B.q,B.k,B.n,0,g))
@@ -125968,7 +125968,7 @@ p.push(new A.IT(o,new A.aPw(h),1,10,9,""+o,g))
 e=h.a.c
 if(!(e!=null&&e.ay!=="manual"))p.push(A.bM(A.b([A.ch(A.dD(g,B.ar,!1,g,!0,B.B,g,A.dO(),h.as,g,g,g,g,g,2,B.Z9,B.N,!0,g,!0,g,!1,g,B.ad,g,g,g,g,B.dm,g,g,g,1,g,g,!1,f,g,g,g,g,g,!1,g,g,!1,g,!0,g,B.aq,g,g,g,g,g,g,g,g,g,g,g,g,!0,B.Q,g,B.aw,g,g,g,g),1),B.d1,A.ch(A.dD(g,B.ar,!1,g,!0,B.B,g,A.dO(),h.at,g,g,g,g,g,2,B.Z8,B.N,!0,g,!0,g,!1,g,B.ad,g,g,g,g,B.dm,g,g,g,1,g,g,!1,f,g,g,g,g,g,!1,g,g,!1,g,!0,g,B.aq,g,g,g,g,g,g,g,g,g,g,g,g,!0,B.Q,g,B.aw,g,g,g,g),1)],q),B.q,B.k,B.n,0,g))
 p.push(B.a_)
-p.push(A.dD(g,B.ar,!1,g,!0,B.B,g,A.dO(),h.ax,g,g,g,g,g,2,B.Zh,B.N,!0,g,!0,g,!1,g,B.ad,g,g,g,g,g,g,g,g,8,3,g,!1,f,g,g,g,g,g,!1,g,g,!1,g,!0,g,B.aq,g,g,g,g,g,g,g,g,g,g,g,g,!0,B.Q,g,B.aw,g,g,g,g))
+p.push(A.dD(g,B.ar,!1,g,!0,B.B,g,A.dO(),h.ax,g,g,g,g,g,2,B.Zi,B.N,!0,g,!0,g,!1,g,B.ad,g,g,g,g,g,g,g,g,8,3,g,!1,f,g,g,g,g,g,!1,g,g,!1,g,!0,g,B.aq,g,g,g,g,g,g,g,g,g,g,g,g,!0,B.Q,g,B.aw,g,g,g,g))
 p.push(B.j8)
 e=h.ch?g:h.ga2M()
 p.push(A.b1L(B.oP,A.a0(h.a.c!=null?"\xc4nderungen sichern":"Einheit sichern",g,g,g,g,g,g,g),e))
@@ -126049,7 +126049,7 @@ return a},
 $S:20}
 A.aPv.prototype={
 $4(a,b,c,d){var s=null
-return A.dD(s,B.ar,!1,s,!0,B.B,s,A.dO(),b,s,s,s,s,s,2,B.Zf,B.N,!0,s,!0,s,!1,c,B.ad,s,s,s,s,s,s,s,s,1,s,s,!1,"\u2022",s,new A.aPq(this.a),s,s,s,!1,s,s,!1,s,!0,s,B.aq,s,s,s,s,s,s,s,s,s,s,s,s,!0,B.Q,s,B.aw,s,s,s,s)},
+return A.dD(s,B.ar,!1,s,!0,B.B,s,A.dO(),b,s,s,s,s,s,2,B.Zg,B.N,!0,s,!0,s,!1,c,B.ad,s,s,s,s,s,s,s,s,1,s,s,!1,"\u2022",s,new A.aPq(this.a),s,s,s,!1,s,s,!1,s,!0,s,B.aq,s,s,s,s,s,s,s,s,s,s,s,s,!0,B.Q,s,B.aw,s,s,s,s)},
 $S:789}
 A.aPq.prototype={
 $1(a){this.a.x.sd4(a)
@@ -126153,7 +126153,7 @@ F(a){var s,r,q,p=this,o=null,n="Anmelden",m=t.G.a(A.D(a).c.h(0,A.bb(t.W)))
 m.toString
 s=A.hu(o,o,o,!0,!0,o,o,1,o,o,o,!1,o,!1,o,o,o,o,!0,o,o,o,o,o,A.a0(p.f?"Registrieren":n,o,o,o,o,o,o,o),o,o,o,1,o,!0)
 m=A.b([A.a0("Ein Account \u2013 alle Ger\xe4te. Deine Einheiten werden verschl\xfcsselt \xfcbertragen und liegen auf Servern in der EU.",o,o,o,A.b8(o,o,m.r,o,o,o,o,o,o,o,o,o,o,o,o,o,o,!0,o,o,o,o,o,o,o,o),o,o,o),B.j8],t.p)
-m.push(A.dD(o,B.a5C,!1,o,!0,B.B,o,A.dO(),p.d,o,o,o,o,o,2,B.Zn,B.N,!0,o,!0,o,!1,o,B.ad,o,o,o,o,B.qy,o,o,o,1,o,o,!1,"\u2022",o,o,o,o,o,!1,o,o,!1,o,!0,o,B.aq,o,o,o,o,o,o,o,o,o,o,o,o,!0,B.Q,o,B.aw,o,o,o,o))
+m.push(A.dD(o,B.a5C,!1,o,!0,B.B,o,A.dO(),p.d,o,o,o,o,o,2,B.Zo,B.N,!0,o,!0,o,!1,o,B.ad,o,o,o,o,B.qy,o,o,o,1,o,o,!1,"\u2022",o,o,o,o,o,!1,o,o,!1,o,!0,o,B.aq,o,o,o,o,o,o,o,o,o,o,o,o,!0,B.Q,o,B.aw,o,o,o,o))
 m.push(B.ei)
 r=A.b([p.f?"newPassword":"password"],t.s)
 m.push(A.dD(o,r,!1,o,!0,B.B,o,A.dO(),p.e,o,o,o,o,o,2,A.kM(o,o,o,o,o,o,o,o,!0,o,o,o,o,o,o,o,o,o,o,o,o,o,o,o,o,o,p.f?"Mindestens 8 Zeichen":o,o,o,o,o,o,o,o,o,o,o,o,o,o,"Passwort",!0,!0,!1,o,o,o,o,o,o,o,o,o,o,o,o,o,o),B.N,!0,o,!0,o,!1,o,B.ad,o,o,o,o,o,o,o,o,1,o,o,!0,"\u2022",o,o,o,new A.aPJ(p),o,!1,o,o,!1,o,!0,o,B.aq,o,o,o,o,o,o,o,o,o,o,o,o,!0,B.Q,o,B.aw,o,o,o,o))
@@ -126394,7 +126394,7 @@ if(j.d===B.cf){l=j.e
 if(l==null)l=i
 else l=l===B.aX||l===B.bV||l===B.bv
 l=l===!0}else l=!1
-if(l)B.b.M(p,A.b([B.d1,A.ch(A.dD(i,B.ar,!1,i,!0,B.B,i,A.dO(),j.z,i,i,i,i,i,2,B.Zi,B.N,!0,i,!0,i,!1,i,B.ad,i,i,i,i,B.ml,i,i,i,1,i,i,!1,"\u2022",i,i,i,i,i,!1,i,i,!1,i,!0,i,B.aq,i,i,i,i,i,i,i,i,i,i,i,i,!0,B.Q,i,B.aw,i,i,i,i),1)],q))
+if(l)B.b.M(p,A.b([B.d1,A.ch(A.dD(i,B.ar,!1,i,!0,B.B,i,A.dO(),j.z,i,i,i,i,i,2,B.Zj,B.N,!0,i,!0,i,!1,i,B.ad,i,i,i,i,B.ml,i,i,i,1,i,i,!1,"\u2022",i,i,i,i,i,!1,i,i,!1,i,!0,i,B.aq,i,i,i,i,i,i,i,i,i,i,i,i,!0,B.Q,i,B.aw,i,i,i,i),1)],q))
 o.push(A.bM(p,B.q,B.k,B.n,0,i))}o.push(B.a_)
 o.push(A.dD(i,B.ar,!1,i,!0,B.B,i,A.dO(),j.Q,i,i,i,i,i,2,B.Zb,B.N,!0,i,!0,i,!1,i,B.ad,i,i,i,i,i,i,i,i,10,3,i,!1,"\u2022",i,i,i,i,i,!1,i,i,!1,i,!0,i,B.aq,i,i,i,i,i,i,i,i,i,i,i,i,!0,B.Q,i,B.aw,i,i,i,i))
 p=j.a.d
@@ -126653,7 +126653,7 @@ p.push(B.fd)
 p.push(new A.dy(B.hW,s,s,A.aFl(B.YW,B.aoE,new A.aD4(b)),s))
 return new A.cF("Kalender",B.v6,s,A.bn(p,B.aQ,B.k,B.n,0,B.w),B.a7,s)},
 anJ(a,b,c){var s=null,r=c.r
-return new A.cF("Daten",B.YB,s,A.bn(A.b([A.a0("Sicherung aus der bisherigen TriCoach-Web-App \xfcbernehmen (Einstellungen \u2192 \u201eDaten sichern\u201c). Doppelte Eintr\xe4ge entstehen nicht.",s,s,s,A.b8(s,s,r,s,s,s,s,s,s,s,s,s,s,s,s,s,s,!0,s,s,s,s,s,s,s,s),s,s,s),B.aL,A.amq(B.YN,B.ao8,new A.aD5(b,a)),B.aL,A.amq(B.Z5,B.aoA,new A.aD6(a,b)),new A.aF(B.o1,A.a0("Von der Uhr per USB (Ordner GARMIN/Activity) oder aus Garmin Connect exportiert.",s,s,s,A.b8(s,s,r,s,s,s,s,s,s,s,s,12,s,s,s,s,s,!0,s,s,s,s,s,s,s,s),s,s,s),s),B.aL,A.fG(A.a0("Alle Daten auf diesem Ger\xe4t l\xf6schen",s,s,s,A.b8(s,s,c.db,s,s,s,s,s,s,s,s,s,s,s,s,s,s,!0,s,s,s,s,s,s,s,s),s,s,s),s,s,new A.aD7(a,b),s,s)],t.p),B.af,B.k,B.n,0,B.w),B.a7,s)}}
+return new A.cF("Daten",B.YB,s,A.bn(A.b([A.a0("Sicherung aus der bisherigen TriCoach-Web-App \xfcbernehmen (Einstellungen \u203a \u201eDaten sichern\u201c). Doppelte Eintr\xe4ge entstehen nicht.",s,s,s,A.b8(s,s,r,s,s,s,s,s,s,s,s,s,s,s,s,s,s,!0,s,s,s,s,s,s,s,s),s,s,s),B.aL,A.amq(B.YN,B.ao8,new A.aD5(b,a)),B.aL,A.amq(B.Z5,B.aoA,new A.aD6(a,b)),new A.aF(B.o1,A.a0("Von der Uhr per USB (Ordner GARMIN/Activity) oder aus Garmin Connect exportiert.",s,s,s,A.b8(s,s,r,s,s,s,s,s,s,s,s,12,s,s,s,s,s,!0,s,s,s,s,s,s,s,s),s,s,s),s),B.aL,A.fG(A.a0("Alle Daten auf diesem Ger\xe4t l\xf6schen",s,s,s,A.b8(s,s,c.db,s,s,s,s,s,s,s,s,s,s,s,s,s,s,!0,s,s,s,s,s,s,s,s),s,s,s),s,s,new A.aD7(a,b),s,s)],t.p),B.af,B.k,B.n,0,B.w),B.a7,s)}}
 A.aDa.prototype={
 $1(a){return this.a.DM(this.b)},
 $S:8}
@@ -126736,7 +126736,7 @@ var $async$$0=A.n(function(a,b){if(a===1)return A.o(b,r)
 for(;;)switch(s){case 0:s=2
 return A.h(A.xE(new A.pr("https://nlqrfbccsdurriiuztsj.supabase.co/functions/v1/calendar?token="+q.a)),$async$$0)
 case 2:p=q.b
-if(p.e!=null)A.eb(p,"Link kopiert \u2013 in Google Kalender: \u201eAndere Kalender \u2192 Per URL\u201c einf\xfcgen.")
+if(p.e!=null)A.eb(p,"Link kopiert \u2013 in Google Kalender: \u201eAndere Kalender \u203a Per URL\u201c einf\xfcgen.")
 return A.p(null,r)}})
 return A.q($async$$0,r)},
 $S:3}
@@ -126869,7 +126869,7 @@ l(){var s=this.gRD()
 s.S$=$.a5()
 s.N$=0
 this.aD()},
-F(a){var s=null,r=A.ch(A.dD(s,B.ar,!1,s,!0,B.B,s,A.dO(),this.gRD(),s,s,s,s,s,2,B.Zp,B.N,!0,s,!0,s,!1,s,B.ad,s,s,s,s,s,s,s,s,1,s,s,!0,"\u2022",s,s,s,s,s,!1,s,s,!1,s,!0,s,B.aq,s,s,s,s,s,s,s,s,s,s,s,s,!0,B.Q,s,B.aw,s,s,s,s),1)
+F(a){var s=null,r=A.ch(A.dD(s,B.ar,!1,s,!0,B.B,s,A.dO(),this.gRD(),s,s,s,s,s,2,B.Zc,B.N,!0,s,!0,s,!1,s,B.ad,s,s,s,s,s,s,s,s,1,s,s,!0,"\u2022",s,s,s,s,s,!1,s,s,!1,s,!0,s,B.aq,s,s,s,s,s,s,s,s,s,s,s,s,!0,B.Q,s,B.aw,s,s,s,s),1)
 return A.bM(A.b([r,B.d1,A.hW(B.hB,this.e?s:new A.aO8(this,a),s)],t.p),B.q,B.k,B.n,0,s)}}
 A.aO8.prototype={
 $0(){var s=0,r=A.r(t.H),q=1,p=[],o=this,n,m,l,k,j,i
@@ -127200,7 +127200,7 @@ e=e>0?" \xb7 "+A.wZ(k.b,e):""
 d=k.ay==="manual"?"":" \xb7 Uhr"
 o.push(A.b1a(B.a2,b,!0,new A.aX7(c,k),A.a0(""+A.ck(h)+". "+g+" \xb7 "+f+e+d,b,b,b,b,b,b,b),i,!j))}p=q.length
 if(p!==0){m=p===1?"":"en"
-m=A.a0("1. ZIP speichern ("+p+" FIT-Datei"+m+") und entpacken.\n2. app.trainingpeaks.com \u2192 Kalender: alle .fit-Dateien markieren und zusammen auf den Kalender ziehen. Jede landet am richtigen Tag und wird mit der geplanten Einheit verbunden; schon vorhandene \xfcberspringt TrainingPeaks.",b,b,b,b,b,b,b)
+m=A.a0("1. ZIP speichern ("+p+" FIT-Datei"+m+") und entpacken.\n2. app.trainingpeaks.com \u203a Kalender: alle .fit-Dateien markieren und zusammen auf den Kalender ziehen. Jede landet am richtigen Tag und wird mit der geplanten Einheit verbunden; schon vorhandene \xfcberspringt TrainingPeaks.",b,b,b,b,b,b,b)
 p=c.f
 j=p?b:new A.aX8(c,new A.aXa(c,a1),q,a,a1)
 B.b.M(o,A.b([B.a_,new A.cF("Alle auf einmal als FIT-Dateien",B.YI,b,A.bn(A.b([m,B.aL,A.b1L(B.vq,A.a0(p?"Packe \u2026":"ZIP speichern",b,b,b,b,b,b,b),j)],n),B.aQ,B.k,B.n,0,B.w),B.a7,b)],n))}p=c.r
@@ -132345,22 +132345,22 @@ B.Z8=new A.eo(null,null,null,"Kalorien",null,null,null,null,null,null,"wird gesc
 B.Z9=new A.eo(null,null,null,"\xd8 Puls",null,null,null,null,null,null,"optional",null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
 B.Za=new A.eo(null,null,null,"Titel",null,null,null,null,null,null,"z. B. Schwelle 5\xd71 km",null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
 B.Zb=new A.eo(null,null,null,"Beschreibung",null,null,null,null,null,null,"z. B. 15 min ein, 5\xd71 km @ Schwelle, 90 s Trabpause",null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
+B.Zc=new A.eo(null,null,null,"intervals.icu API-Key",null,null,null,null,null,null,"intervals.icu \u203a Settings \u203a Developer",null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
 B.av2=new A.eo(null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
-B.Zc=new A.eo(null,null,null,null,null,null,null,null,null,null,"Wdh",null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
-B.Zd=new A.eo(null,null,null,"Beschreibung",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
-B.Ze=new A.eo(null,null,null,"WebUntis-Benutzername",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
-B.Zf=new A.eo(null,null,null,"Art",null,null,null,null,null,null,"z. B. Kitesurfen",null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
-B.Zg=new A.eo(null,null,null,null,null,null,null,null,null,null,"S\xe4tze",null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
-B.Zh=new A.eo(null,null,null,"Notizen",null,null,null,null,null,null,"F\xfcr dich und deinen Coach \u2013 z. B. Hauptserie, Gef\xfchl, Material",null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
-B.Zi=new A.eo(null,null,null,"Distanz (km)",null,null,null,null,null,null,"optional",null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
-B.Zj=new A.eo(null,null,null,null,null,null,null,null,null,null,"\xdcbung",null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
-B.Zk=new A.eo(null,null,null,"Dauer (h:mm)",null,null,null,null,null,null,"1:00",null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
-B.Zl=new A.eo(null,null,null,"Passwort",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
-B.Zm=new A.eo(null,null,null,null,null,null,null,null,null,null,"kg",null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
-B.Zn=new A.eo(null,null,null,"E-Mail",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
-B.Zo=new A.eo(null,null,null,"Einladungscode",null,null,null,null,null,null,"z. B. 7F3K9Q2A",null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
+B.Zd=new A.eo(null,null,null,null,null,null,null,null,null,null,"Wdh",null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
+B.Ze=new A.eo(null,null,null,"Beschreibung",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
+B.Zf=new A.eo(null,null,null,"WebUntis-Benutzername",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
+B.Zg=new A.eo(null,null,null,"Art",null,null,null,null,null,null,"z. B. Kitesurfen",null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
+B.Zh=new A.eo(null,null,null,null,null,null,null,null,null,null,"S\xe4tze",null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
+B.Zi=new A.eo(null,null,null,"Notizen",null,null,null,null,null,null,"F\xfcr dich und deinen Coach \u2013 z. B. Hauptserie, Gef\xfchl, Material",null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
+B.Zj=new A.eo(null,null,null,"Distanz (km)",null,null,null,null,null,null,"optional",null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
+B.Zk=new A.eo(null,null,null,null,null,null,null,null,null,null,"\xdcbung",null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
+B.Zl=new A.eo(null,null,null,"Dauer (h:mm)",null,null,null,null,null,null,"1:00",null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
+B.Zm=new A.eo(null,null,null,"Passwort",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
+B.Zn=new A.eo(null,null,null,null,null,null,null,null,null,null,"kg",null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
+B.Zo=new A.eo(null,null,null,"E-Mail",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
+B.Zp=new A.eo(null,null,null,"Einladungscode",null,null,null,null,null,null,"z. B. 7F3K9Q2A",null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
 B.vu=new A.eo(null,null,null,"Dauer (h:mm)",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
-B.Zp=new A.eo(null,null,null,"intervals.icu API-Key",null,null,null,null,null,null,"intervals.icu \u2192 Settings \u2192 Developer",null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
 B.vv=new A.ym(0,"NOT_SET")
 B.SG=new A.ef(0.1,0,0.45,1)
 B.Zt=new A.du(0.7038888888888889,1,B.SG)
