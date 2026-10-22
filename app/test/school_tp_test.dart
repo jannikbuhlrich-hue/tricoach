@@ -7,7 +7,6 @@ import 'package:tricoach/data/health_import.dart';
 import 'package:tricoach/core/models.dart';
 import 'package:tricoach/core/school.dart';
 import 'package:tricoach/core/sport.dart';
-import 'package:tricoach/core/tc_crypto.dart';
 import 'package:tricoach/core/tp_plan.dart';
 import 'package:tricoach/core/zip.dart';
 import 'package:tricoach/data/local_store.dart';
@@ -16,11 +15,17 @@ import 'package:tricoach/state/app_state.dart';
 import 'package:tricoach/ui/school_card.dart';
 import 'package:tricoach/ui/theme.dart';
 
-/// Mit tools/untis-sync.mjs (encrypt) und dem Test-Schlüssel erzeugt – genau das Format, das der GitHub-Job
-/// „Schule (WebUntis)“ in den Branch schule-daten legt. Kein echter Schlüssel, keine echten Schuldaten.
-const testKey = 'test-schluessel-123';
-const nodeFixture =
-    r'{"v":1,"salt":"cWV/nSCSywe2g5q7rlaXCg==","iv":"Iq3AUoTfrxBykgqb","ct":"cz5sLCGCa62rA+u5TdaOyLPgUik6YLFpXtMhpD/1LRaoaSwCN+ytOD7+HxtLFPPzLjiORATrCHpyRODkt1QB2CEzh4kvYIjVGvhaGrMgKK4pT8GX0opOSa4+nlPXo51Ph03taYto+VlVi+lPs8AZ1VLG3P77YDnc9mFlQGKjUEgk5SpNDFOcqGWE2FYu2LrpvLoxJq61x3BDDfCqSVOK/cr5ivmIcXrD1H8lKHVFsLuJkZPmlHWPg2TU2x56GxTayCewT0+AIkQeh2Rx5wFiyKWpxPbJ3X8ihmBVN+PIv6ODKIs7gZUUE3TD3YDzfonIOtrWIt1X8R0CK4MSaqDiZQQP3f7R4o5POXAcONCRlGXWZdkYor4PLXdNKVkEMuqwq8mIK837e5w6NdDPY3M5bLbfV/RjgHSHdNcaaa11/rD1r9moIrHOc2Lk9r7o3p4483aZN8E9xx76RUnCEF9L7criSWhXrwJaFtNomQ8bao43MIQovvmRdDiG4DgtMhysFO2v7aqEFqsfoFLo/OfaqrPvYqDDc704CehZvdNx+6uz64c0I9h5FWBYhL5eAgHdZ9WZ508RbsYF/B4BsEKgKTa5deTXtxfKRvZtVGjiAMiYb9qjFfzqqcWUWVq+XKACckW0zjg02uIsKa65TCHgWf6J5Eur/lX1kllaLUQhcbKHf7zCKh0IKRAn2uOmRcN4IKRc5Zv8NKwohtG1lmmRDIH7B3f9gZuvx0+mZEcqExzjz9QlbV7GLPsSZdlRVw3ghcNTAIeDHkB77b7MAI/4RKSAm9OqKpf6H2c4n8psn34tZpZDeNf7x4gQUegdjB0cpWGLuuESkOb9C2avUqpLdIM6wH7ftr7xYjvBZex02unE9qeLdvLCY6NzIgNSmlGiqaO1Lf2V8Ec39JWRGmb1bFyVwmj/BhQNqC4ztHviaufub0ht7s6ZSqKQwxcRstr+xpiwQqL8hAQWvVlomKry5aHU4cs8r4kHJLQtgGMerlH+QtM+knv987JyapoWHsBy5jq9//Hj0HWEPh1LOcWAHvOzNujPKVUvOObvbwi7cUKoGhjRamqw6m2UDHBYv07phEZgfAonYVbE91EoB6qFK6NT50cMw0fMjH2FuLb+xcpyRZiFyo/JrMpm8zxeswFQiJ6s7CbslatQ4Z02m++Zu2+HYhLPfKSZHUSSp/KqKni1SN6K3qHulgGF1mJrjurFzUvTO8efxrTPkuL3/DK/ENi06nm5FtWxilPEONtA//b5PndTrOr3NFU0PF5W1xMWjQ8buJE35rzxdrui/jzmEEARxgBokvWiZOqt7Atr/8xwUgiJkpA7m0W8yjib9i6w3TQY8r69VdS5om4ss1XUKMeI9dcsAARGCJLDy3BaDc9GA1TFrPO4H5spehECHuHsawQJgrMi+VgBv+89pg0s4IhCcZFXTS0hDMQ9l+cFFw6hr2deztJ09ZX25ubHVUjPiLAHQJBmnYa5Dhv5S9JAo6e1EyrigLZUiwGLwvxaNHEBvOOD904LJuSySsWob7Sb0AjNx58axLpMBBJ41s/sz+zWE0xDMDxuXA4RjYo5iLkKeThSvKKVhUGNe79ZeZW1mgA8EaAytKAzqQ=="}';
+/// Antwort der Server-Funktion „feeds“ (untisFetch) – gleiches Format wie tools/untis-sync.mjs. Keine echten Schuldaten.
+final schoolJson = jsonDecode(r"""
+{"at":"2026-10-22T14:33:54.432Z","lessons":[
+ {"id":1,"d":"2026-10-26","s":"07:45","e":"08:30","su":"MatL1","sul":"","ro":"R 110","roOrg":"","te":"SCH","teOrg":"","code":"","info":"","subst":"","ls":""},
+ {"id":2,"d":"2026-10-26","s":"08:30","e":"09:15","su":"MatL1","sul":"","ro":"R 110","roOrg":"","te":"SCH","teOrg":"","code":"","info":"","subst":"","ls":""},
+ {"id":3,"d":"2026-10-26","s":"09:35","e":"10:20","su":"E","sul":"","ro":"R 204","roOrg":"R 110","te":"MÜL","teOrg":"BEC","code":"irregular","info":"","subst":"Vertretung","ls":""},
+ {"id":4,"d":"2026-10-26","s":"10:20","e":"11:05","su":"BIO","sul":"Biologie","ro":"R 1","roOrg":"","te":"KRA","teOrg":"","code":"cancelled","info":"Aufgaben im Moodle-Kurs","subst":"","ls":""}],
+ "homework":[{"id":7,"su":"M","text":"S. 112 Nr. 4a–d","remark":"","date":"2026-10-20","due":"2026-10-27","done":false},{"id":8,"su":"E","text":"Vokabeln Unit 3","remark":"Test möglich","date":"2026-10-20","due":"2026-10-28","done":true}],
+ "exams":[{"id":9,"d":"2026-10-29","s":"08:30","e":"10:20","su":"M","name":"Klassenarbeit Mathe","type":"Klassenarbeit","text":"","ro":"R 112"}],
+ "news":[{"subject":"Wandertag","text":"Feste Schuhe mitbringen."}],"err":[]}
+""") as Map<String, dynamic>;
 
 String tpIcs({bool moved = false, bool withBike = true}) => [
       'BEGIN:VCALENDAR',
@@ -52,29 +57,9 @@ String tpIcs({bool moved = false, bool withBike = true}) => [
     ].join('\r\n');
 
 void main() {
-  group('Verschlüsselung (gleich wie GitHub-Job und Web-App)', () {
-    test('liest die Datei aus tools/untis-sync.mjs', () async {
-      final d = await TcCrypto.decrypt(nodeFixture, testKey) as Map;
-      expect(d['at'], '2026-10-22T14:33:54.432Z');
-      expect((d['lessons'] as List).length, 4);
-      expect(((d['homework'] as List).first as Map)['text'], 'S. 112 Nr. 4a–d');
-    });
-
-    test('falscher Schlüssel ergibt eine klare Meldung', () async {
-      await expectLater(TcCrypto.decrypt(nodeFixture, 'falsch'), throwsA(isA<TcKeyError>()));
-    });
-
-    test('festes Salz wie im Node-Werkzeug, Hin und zurück', () async {
-      expect(base64.encode(await TcCrypto.fixedSalt()), 'cWV/nSCSywe2g5q7rlaXCg==');
-      final enc = await TcCrypto.encrypt({'a': 'Ä', 'n': 3}, testKey);
-      expect(TcCrypto.saltOf(enc), 'cWV/nSCSywe2g5q7rlaXCg==');
-      expect(await TcCrypto.decrypt(enc, testKey), {'a': 'Ä', 'n': 3});
-    });
-  });
-
   group('Schule', () {
     late SchoolData s;
-    setUpAll(() async => s = SchoolData.fromJson(Map<String, dynamic>.from(await TcCrypto.decrypt(nodeFixture, testKey) as Map)));
+    setUpAll(() => s = SchoolData.fromJson(schoolJson));
 
     test('Doppelstunden werden zusammengefasst, Änderungen erkannt', () {
       final ls = s.lessonsOn(DateTime(2026, 10, 26));

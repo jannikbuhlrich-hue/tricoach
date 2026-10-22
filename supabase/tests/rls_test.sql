@@ -83,4 +83,17 @@ select (select count(*) from auth.users where id='00000000-0000-0000-0000-000000
    and (select count(*) from activities where user_id='00000000-0000-0000-0000-00000000000f') = 0
    and (select count(*) from activities where user_id='00000000-0000-0000-0000-00000000000a') = 1 as geloescht \gset
 \if :geloescht \echo 'OK  Account-Löschung entfernt nur eigene Daten' \else \echo 'FEHLER Account-Löschung' \quit \endif
+-- Zugangsdaten (WebUntis-Schlüssel, iCal-Link) sind für die App weder les- noch schreibbar – nur für die Server-Funktion
+insert into integrations (user_id, kind, config, label) values ('00000000-0000-0000-0000-00000000000a', 'webuntis', '{"key":"geheim"}', 'Schule');
+set role authenticated;
+set request.jwt.claim.sub = '00000000-0000-0000-0000-00000000000a';
+do $$ begin
+  perform * from integrations;
+  raise exception 'FEHLER: Zugangsdaten lesbar';
+exception when insufficient_privilege then raise notice 'OK  Zugangsdaten für die App nicht lesbar'; end $$;
+do $$ begin
+  insert into integrations (user_id, kind, config) values ('00000000-0000-0000-0000-00000000000a', 'trainingpeaks', '{}');
+  raise exception 'FEHLER: Zugangsdaten schreibbar';
+exception when insufficient_privilege then raise notice 'OK  Zugangsdaten für die App nicht schreibbar'; end $$;
+reset role;
 \echo 'ALLE DATENBANK-TESTS BESTANDEN'

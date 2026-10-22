@@ -9,6 +9,7 @@ import '../school_card.dart';
 import '../theme.dart';
 import '../widgets.dart';
 import 'log_screen.dart';
+import 'connect_screens.dart';
 import 'plan_editor.dart';
 import 'tp_export_screen.dart';
 
@@ -66,6 +67,18 @@ class TodayScreen extends StatelessWidget {
             if (evening) ...[dayCard(tomorrow, 'Morgen'), const SizedBox(height: 12)],
             dayCard(today, 'Heute'),
             const SizedBox(height: 12),
+            if (app.signedIn && !app.untisOn && !app.untisHintOff) ...[
+              Card(
+                child: ListTile(
+                  leading: Icon(Icons.school_rounded, color: c.accent),
+                  title: const Text('Stundenplan verbinden'),
+                  subtitle: const Text('WebUntis: Ausfall, Vertretung und Hausaufgaben direkt in Mein Tag'),
+                  onTap: () => openUntisConnect(context),
+                  trailing: IconButton(tooltip: 'Ausblenden', icon: const Icon(Icons.close_rounded), onPressed: app.hideUntisHint),
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
             if (app.tpMissing(7).isNotEmpty) ...[
               Card(
                 child: ListTile(

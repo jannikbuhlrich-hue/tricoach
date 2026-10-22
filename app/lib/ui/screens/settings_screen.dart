@@ -14,6 +14,7 @@ import '../../state/app_state.dart';
 import '../theme.dart';
 import '../widgets.dart';
 import 'coach_screen.dart';
+import 'connect_screens.dart';
 import 'login_screen.dart';
 import 'tp_export_screen.dart';
 
@@ -442,74 +443,66 @@ class _ProfileCardState extends State<_ProfileCard> {
   }
 }
 
-/// Schule (WebUntis) und TrainingPeaks-Plan über die GitHub-Jobs – derselbe Schlüssel wie in der Web-App
-/// (Einstellungen → Schule) bzw. das GitHub-Secret TRICOACH_KEY.
-class _FeedsCard extends StatefulWidget {
+/// Schule (WebUntis) und TrainingPeaks – für jeden Nutzer mit ein, zwei Klicks verbunden
+class _FeedsCard extends StatelessWidget {
   const _FeedsCard();
-
-  @override
-  State<_FeedsCard> createState() => _FeedsCardState();
-}
-
-class _FeedsCardState extends State<_FeedsCard> {
-  late final AppState app = AppScope.read(context);
-  late final key = TextEditingController(text: app.tcKey);
-  late final repo = TextEditingController(text: app.tcRepo);
-
-  @override
-  void dispose() {
-    key.dispose();
-    repo.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
     final app = AppScope.of(context), c = TriColors.of(context);
-    String line(String label, DateTime? at, String? err) =>
-        '$label: ${err ?? (at == null ? 'noch nicht geholt' : 'Stand ${shortDate(at.toLocal())} ${timeTxt(at.toLocal())}')}';
+    String when(DateTime? at) => at == null ? '' : ' · Stand ${shortDate(at.toLocal())} ${timeTxt(at.toLocal())}';
+    Widget status(String? err, String ok) => Text(err ?? ok, style: TextStyle(color: err != null ? c.warn : c.muted, fontSize: 12));
+
+    if (app.localOnly || !app.signedIn) {
+      return TriCard(
+        title: 'Schule & TrainingPeaks',
+        icon: Icons.school_rounded,
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Text('Stundenplan mit Ausfall, Hausaufgaben und Prüfungen aus WebUntis sowie der Plan deines Trainers aus TrainingPeaks – direkt in „Mein Tag“.',
+              style: TextStyle(color: c.muted)),
+          const SizedBox(height: 8),
+          if (!app.localOnly) FilledButton.tonal(onPressed: () => openLogin(context), child: const Text('Dafür anmelden')),
+        ]),
+      );
+    }
     return TriCard(
       title: 'Schule & TrainingPeaks',
       icon: Icons.school_rounded,
-      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Text('Stundenplan mit Ausfall, Hausaufgaben und Prüfungen aus WebUntis sowie der Plan deiner Trainerin aus TrainingPeaks. '
-            'Die GitHub-Jobs legen beides verschlüsselt ab – entschlüsselt wird nur hier mit deinem TriCoach-Schlüssel.',
-            style: TextStyle(color: c.muted)),
-        const SizedBox(height: 8),
-        TextField(
-          controller: key,
-          obscureText: true,
-          decoration: const InputDecoration(labelText: 'TriCoach-Schlüssel', hintText: 'wie GitHub-Secret TRICOACH_KEY'),
-        ),
-        const SizedBox(height: 8),
-        TextField(
-          controller: repo,
-          decoration: const InputDecoration(labelText: 'GitHub-Repo', hintText: 'besitzer/name'),
-        ),
-        const SizedBox(height: 8),
-        Wrap(spacing: 8, runSpacing: 4, crossAxisAlignment: WrapCrossAlignment.center, children: [
-          FilledButton(
-            onPressed: app.feedsBusy
-                ? null
-                : () async {
-                    final msg = await app.setTcKey(key.text, repo: repo.text);
-                    if (context.mounted && msg.isNotEmpty) showMsg(context, msg);
-                  },
-            child: Text(app.feedsBusy ? 'Hole …' : 'Speichern & holen'),
-          ),
-          if (app.tcKey.isNotEmpty)
-            TextButton.icon(
+      trailing: app.links.isEmpty
+          ? null
+          : IconButton(
+              tooltip: 'Jetzt holen',
+              icon: app.feedsBusy ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.sync_rounded),
               onPressed: app.feedsBusy
                   ? null
                   : () async {
-                      final msg = await app.syncFeeds(manual: true);
-                      if (context.mounted && msg.isNotEmpty) showMsg(context, msg);
+                      final m = await app.syncFeeds(manual: true);
+                      if (context.mounted && m.isNotEmpty) showMsg(context, m);
                     },
-              icon: const Icon(Icons.sync_rounded),
-              label: const Text('Jetzt holen'),
             ),
-        ]),
-        const SizedBox(height: 4),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        // WebUntis
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: Icon(Icons.school_rounded, color: app.untisOn ? c.good : c.muted),
+          title: const Text('WebUntis'),
+          subtitle: app.untisOn
+              ? status(app.schoolError, '${app.links['webuntis']}${when(app.school?.at)}')
+              : const Text('Stundenplan, Ausfall, Hausaufgaben, Prüfungen'),
+          trailing: app.untisOn
+              ? TextButton(onPressed: () => app.disconnectFeed('webuntis'), child: const Text('Trennen'))
+              : FilledButton(onPressed: () => openUntisConnect(context), child: const Text('Verbinden')),
+        ),
+        // TrainingPeaks
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: Icon(Icons.event_note_rounded, color: app.tpOn ? c.good : c.muted),
+          title: const Text('TrainingPeaks'),
+          subtitle: app.tpOn ? status(app.tpError, '${app.links['trainingpeaks']}${when(app.tpAt)}') : const Text('Plan deines Trainers automatisch im Kalender'),
+          trailing: app.tpOn
+              ? TextButton(onPressed: () => app.disconnectFeed('trainingpeaks'), child: const Text('Trennen'))
+              : FilledButton(onPressed: () => openTpConnect(context), child: const Text('Verbinden')),
+        ),
         Align(
           alignment: Alignment.centerLeft,
           child: TextButton.icon(
@@ -521,11 +514,6 @@ class _FeedsCardState extends State<_FeedsCard> {
             }()),
           ),
         ),
-        if (app.tcKey.isNotEmpty) ...[
-          const SizedBox(height: 6),
-          Text(line('Schule', app.school?.at, app.schoolError), style: TextStyle(color: app.schoolError != null ? c.warn : c.muted, fontSize: 12)),
-          Text(line('TrainingPeaks', app.tpAt, app.tpError), style: TextStyle(color: app.tpError != null ? c.warn : c.muted, fontSize: 12)),
-        ],
       ]),
     );
   }

@@ -18,8 +18,9 @@ status: aktiv
 
 Claude hat die Claude-Aufgaben aus W0–W7 und die Texte aus W10–W11 vorgezogen. Code liegt im Branch **`flutter-app`** (deine Web-App auf `main` bleibt unverändert). GitHub baut und testet bei jedem Push automatisch.
 
-**Noch offen bei Claude:** TrainingPeaks über Apple Health · Schule-Modul · Abos (RevenueCat) · Store-Einreichung.
-**Jetzt bei dir (Woche 0):** Supabase-Projekt anlegen (`supabase/EINRICHTEN.md`, ~20 min) · Eltern wegen Store-Konten fragen · Ideal-Kunde · Tester-Liste.
+**Erledigt am 22.10. nachmittags:** Supabase eingerichtet (Datenbank, Kalender-Abo, Login, GitHub-Variablen) · Schule-Modul (WebUntis) · TrainingPeaks-Plan der Trainerin in der App · fehlende Einheiten auf einmal nachtragen (ZIP/FIT, Apple Health) · Web-Version unter <https://jannikbuhlrich-hue.github.io/tricoach/v3/>.
+**Noch offen bei Claude:** Abos (RevenueCat) · Store-Einreichung – beides braucht die Store-Konten.
+**Jetzt bei dir:** Web-Version öffnen, Account anlegen, alte Sicherung laden · iCal-Link der Trainerin als Secret `TP_ICAL` · Eltern wegen Store-Konten fragen · Ideal-Kunde · Tester-Liste.
 
 ---
 
@@ -73,7 +74,7 @@ Claude hat die Claude-Aufgaben aus W0–W7 und die Texte aus W10–W11 vorgezoge
 
 ### Woche 0 – Startwoche (Do 22.10. – So 25.10.)
 **Ziel:** Alles vorbereitet, damit Montag gecodet werden kann.
-- [ ] **Du:** Supabase-Konto anlegen (kostenlos), Region Frankfurt (30 min)
+- [x] **Du:** Supabase-Konto anlegen (kostenlos) ✅ 22.10. (Region Irland, auch EU)
 - [ ] **Du:** Klären, ob du für Gründung/Store-Konten jemanden über 18 brauchst (siehe Abschnitt 7) – mit Eltern sprechen (30 min)
 - [ ] **Du:** Ideal-Kunde auf 1 Seite: wer, Alter, Level, Coach ja/nein, was nervt ihn (45 min)
 - [ ] **Du:** Liste mit 5–10 Beta-Testern (Namen, Handy iOS/Android) (20 min)
@@ -119,7 +120,7 @@ Claude hat die Claude-Aufgaben aus W0–W7 und die Texte aus W10–W11 vorgezoge
 ### Woche 6 (30.11. – 06.12.) – Coach-Funktion
 - [x] **Claude:** Trainer laden Athleten per Link ein, sehen deren Einheiten, tragen Plan-Einheiten ein ✅ per Einladungscode
 - [x] **Claude:** Trainer-Ansicht (alle Athleten auf einen Blick, Ampel: erledigt / verpasst) ✅
-- [ ] **Claude:** TrainingPeaks-Brücke: FIT-Export ✅ (byte-gleich mit der Web-App) + Apple-Health-Weg ⏳ offen
+- [x] **Claude:** TrainingPeaks-Brücke: FIT-Export ✅ (byte-gleich mit der Web-App) + Sammel-ZIP + Apple-Health-Weg ✅ 22.10. · Plan der Trainerin automatisch in der App ✅
 - [ ] **Du:** 30 min mit deiner Trainerin: Was braucht sie? Was nervt sie an TrainingPeaks? Notizen machen (1 h)
 **Zeit Du:** ~4 h
 
@@ -139,7 +140,7 @@ Claude hat die Claude-Aufgaben aus W0–W7 und die Texte aus W10–W11 vorgezoge
 
 ### Woche 9 (21.12. – 27.12.) – Puffer (Weihnachten) 🎄
 - [ ] Liegengebliebenes aufholen
-- [ ] **Optional:** Schule-Modul (WebUntis) als freiwilliges Extra für Schüler
+- [x] **Optional:** Schule-Modul (WebUntis) als freiwilliges Extra für Schüler ✅ 22.10. vorgezogen
 - [ ] **Du:** Wenn Zeit: erste 3 Social-Media-Clips drehen (Training + App im Einsatz)
 **Zeit Du:** flexibel
 

@@ -13,5 +13,9 @@ class AppConfig {
   /// Kalender-Abo-Link für PC/Outlook/Google
   static String calendarFeedUrl(String token) => '$supabaseUrl/functions/v1/calendar?token=$token';
 
+  /// „Mit Apple/Google anmelden“ erst zeigen, wenn der Anbieter in Supabase eingerichtet ist (braucht die Store-Konten)
+  static const appleLogin = bool.fromEnvironment('APPLE_LOGIN');
+  static const googleLogin = bool.fromEnvironment('GOOGLE_LOGIN');
+
   static const appVersion = '3.0.0';
 }

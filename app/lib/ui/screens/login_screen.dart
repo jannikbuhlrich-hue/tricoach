@@ -70,13 +70,6 @@ class _LoginScreenState extends State<LoginScreen> {
         if (mounted) Navigator.of(context).pop();
       });
 
-  Future<void> _magic() => _run(() async {
-        final mail = email.text.trim();
-        if (!mail.contains('@')) throw const AuthException('Bitte eine gültige E-Mail eingeben.');
-        await auth.signInWithOtp(email: mail, emailRedirectTo: _redirect);
-        if (mounted) showMsg(context, 'Login-Link ist unterwegs – öffne ihn auf diesem Gerät.');
-      });
-
   Future<void> _oauth(OAuthProvider p) => _run(() async {
         await auth.signInWithOAuth(p, redirectTo: _redirect);
       });
@@ -90,8 +83,9 @@ class _LoginScreenState extends State<LoginScreen> {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 420),
           child: ListView(padding: const EdgeInsets.all(20), shrinkWrap: true, children: [
-            Text('Ein Account – alle Geräte. Deine Einheiten liegen verschlüsselt übertragen auf Servern in Frankfurt.', style: TextStyle(color: c.muted)),
+            Text('Ein Account – alle Geräte. Deine Einheiten werden verschlüsselt übertragen und liegen auf Servern in der EU.', style: TextStyle(color: c.muted)),
             const SizedBox(height: 20),
+            if (AppConfig.appleLogin) ...[
             FilledButton.icon(
               onPressed: busy ? null : () => _oauth(OAuthProvider.apple),
               icon: const Icon(Icons.apple_rounded),
@@ -99,15 +93,21 @@ class _LoginScreenState extends State<LoginScreen> {
               style: FilledButton.styleFrom(backgroundColor: Colors.black, foregroundColor: Colors.white, minimumSize: const Size.fromHeight(48)),
             ),
             const SizedBox(height: 10),
+            ],
+            if (AppConfig.googleLogin) ...[
             OutlinedButton.icon(
               onPressed: busy ? null : () => _oauth(OAuthProvider.google),
               icon: const Icon(Icons.g_mobiledata_rounded, size: 28),
               label: const Text('Mit Google anmelden'),
               style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(48)),
             ),
-            const SizedBox(height: 20),
-            Row(children: [Expanded(child: Divider(color: c.line)), Padding(padding: const EdgeInsets.symmetric(horizontal: 10), child: Text('oder mit E-Mail', style: TextStyle(color: c.muted))), Expanded(child: Divider(color: c.line))]),
-            const SizedBox(height: 16),
+            const SizedBox(height: 10),
+            ],
+            if (AppConfig.appleLogin || AppConfig.googleLogin) ...[
+              const SizedBox(height: 10),
+              Row(children: [Expanded(child: Divider(color: c.line)), Padding(padding: const EdgeInsets.symmetric(horizontal: 10), child: Text('oder mit E-Mail', style: TextStyle(color: c.muted))), Expanded(child: Divider(color: c.line))]),
+              const SizedBox(height: 16),
+            ],
             TextField(controller: email, keyboardType: TextInputType.emailAddress, autofillHints: const [AutofillHints.email], decoration: const InputDecoration(labelText: 'E-Mail')),
             const SizedBox(height: 10),
             TextField(
@@ -120,10 +120,12 @@ class _LoginScreenState extends State<LoginScreen> {
             const SizedBox(height: 14),
             FilledButton(onPressed: busy ? null : _email, style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)), child: Text(register ? 'Account anlegen' : 'Anmelden')),
             const SizedBox(height: 6),
-            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-              TextButton(onPressed: () => setState(() => register = !register), child: Text(register ? 'Schon registriert? Anmelden' : 'Neu hier? Registrieren')),
-              if (!register) TextButton(onPressed: busy ? null : _magic, child: const Text('Login-Link per Mail')),
-            ]),
+            Center(
+              child: TextButton(
+                onPressed: () => setState(() => register = !register),
+                child: Text(register ? 'Schon registriert? Anmelden' : 'Neu hier? Kostenlosen Account anlegen'),
+              ),
+            ),
             if (busy) const Padding(padding: EdgeInsets.only(top: 12), child: Center(child: CircularProgressIndicator())),
           ]),
         ),

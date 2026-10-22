@@ -20,7 +20,13 @@ Die bisherige Web-App (Ordner `../js`, `../index.html`) bleibt unverändert und 
 | Designs | Nacht, Gletscher, Asphalt, Nordsee |
 | Einführung | Einwilligung Gesundheitsdaten (DSGVO), Uhr, Kalender, Account |
 
-Noch offen (laut Plan später): TrainingPeaks über Apple Health, Schule (WebUntis) als Extra, Abos/Bezahlen, Siri.
+| Schule | Für jeden Nutzer: Einstellungen → WebUntis → Verbinden (Schule suchen + Benutzer + Passwort, oder Link aus „Zugriff über Untis Mobile“ bei Microsoft-Login). Stundenplan mit Doppelstunden, Entfall, Vertretung, Prüfungen, Hausaufgaben zum Abhaken in Mein Tag |
+| TrainingPeaks | Für jeden Nutzer: iCal-Link einmal einfügen → Plan des Trainers automatisch inkl. Änderungen/Löschungen; fehlende Einheiten auf einmal nachtragen (ZIP mit FIT-Dateien, iPhone über Apple Health) |
+| Server-Funktion | `supabase/functions/feeds`: holt WebUntis und iCal für die App (Zugangsdaten nur auf dem Server, Tabelle `integrations` ohne App-Zugriff; WebUntis-Passwort wird nie gespeichert) |
+
+Web-Version: <https://jannikbuhlrich-hue.github.io/tricoach/v3/> (wird nach grünen Tests automatisch veröffentlicht).
+
+Noch offen (laut Plan später): Abos/Bezahlen, Siri, Store-Einreichung (braucht die Store-Konten).
 
 ## Ordner
 

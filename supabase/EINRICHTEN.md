@@ -1,5 +1,7 @@
 # Supabase einrichten (ca. 20 Minuten, einmalig)
 
+> **Stand 22.10.2026: erledigt.** Projekt `nlqrfbccsdurriiuztsj` (Region eu-west-1), Datenbank, Funktion `calendar` (ohne JWT), Login-Adressen und die GitHub-Variablen sind eingerichtet. Die Anleitung bleibt für ein neues Projekt (z. B. Test-Umgebung).
+
 Supabase ist der Server hinter TriCoach: Login, Datenbank und Abgleich zwischen den Geräten.
 Kostenlos bis 50.000 Nutzer im Monat und 500 MB Datenbank – für Beta und Start reicht das.
 
@@ -33,14 +35,21 @@ Alternativ im Dashboard: **Edge Functions** → **Deploy a new function** → Na
 Inhalt von `functions/calendar/index.ts` und `functions/calendar/ics.js` einfügen →
 unter den Einstellungen der Funktion **Verify JWT** ausschalten.
 
+## 3b. Verbindungen (WebUntis, TrainingPeaks)
+
+1. SQL Editor: Inhalt von `migrations/20261022180000_integrations.sql` → **Run**.
+2. Funktion `feeds` mit dem Inhalt von `functions/feeds/index.ts` anlegen (CLI: `supabase functions deploy feeds --no-verify-jwt`),
+   **Verify JWT** ausschalten – die Funktion prüft den Login selbst und beantwortet die Schulsuche auch ohne Login.
+
 ## 4. Login einstellen
 
 **Authentication → URL Configuration**
-- Site URL: vorerst `https://jannikbuhlrich-hue.github.io/tricoach/`
-- Redirect URLs hinzufügen: `app.tricoach://login-callback`
+- Site URL: `https://jannikbuhlrich-hue.github.io/tricoach/v3/`
+- Redirect URLs hinzufügen: `app.tricoach://login-callback` und `https://jannikbuhlrich-hue.github.io/tricoach/v3/**`
 
 **Authentication → Providers**
-- Email: an (Standard). „Confirm email“ an lassen.
+- Email: an (Standard). **„Confirm email“ aus** – ohne eigenen Mailserver (SMTP) verschickt Supabase Mails nur an Mitglieder des Projekts.
+  Mit eigenem SMTP (z. B. Resend, kostenlos bis 3 000 Mails/Monat) kann die Bestätigung wieder an.
 - Apple und Google: erst wenn die Store-Konten da sind (Woche 7) – braucht jeweils Zugangsdaten aus dem
   Apple- bzw. Google-Entwicklerkonto. Bis dahin funktioniert Login per E-Mail und Login-Link.
 

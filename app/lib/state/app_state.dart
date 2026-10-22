@@ -1,9 +1,7 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter/widgets.dart';
-import 'package:http/http.dart' show ClientException;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config.dart';
@@ -12,11 +10,10 @@ import '../core/fit.dart';
 import '../core/format.dart';
 import '../core/models.dart';
 import '../core/school.dart';
-import '../core/tc_crypto.dart';
 import '../core/tp_plan.dart';
 import '../core/zip.dart';
 import '../data/device_calendar_sync.dart';
-import '../data/github_feeds.dart';
+import '../data/feeds_remote.dart';
 import '../data/health_import.dart';
 import '../data/icu_source.dart';
 import '../data/local_store.dart';
@@ -51,9 +48,9 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
   String? calendarToken;
   String? message;
 
-  // Schule (WebUntis) und TrainingPeaks-Plan – kommen verschlüsselt von den GitHub-Jobs
-  String tcKey = '';
-  String tcRepo = GithubFeeds.defaultRepo;
+  // Schule (WebUntis) und TrainingPeaks-Plan – über die Server-Funktion „feeds“, für jeden Nutzer
+  /// Verbundene Dienste: 'webuntis' / 'trainingpeaks' → Anzeige-Name (z. B. „Gymnasium X · max.muster“)
+  Map<String, String> links = {};
   SchoolData? school;
   String? schoolError;
   Map<String, bool> hwDone = {};
@@ -64,6 +61,9 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
 
   /// Garmin Connect ist mit TrainingPeaks verbunden → Uhr-Einheiten kommen dort von selbst an
   bool garminTp = true;
+
+  /// Hinweis „Stundenplan verbinden“ in Mein Tag weggeklickt
+  bool untisHintOff = false;
 
   SupabaseRemote? _remote;
   RealtimeChannel? _channel;
@@ -128,6 +128,7 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
     repo.sync.remote = r;
     await _channel?.unsubscribe();
     _channel = r.listen(() => repo.sync.schedule());
+    unawaited(_loadLinks());
     try {
       final p = await r.loadProfile();
       if (p != null) {
@@ -305,14 +306,14 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
     return (added: fresh.length, known: found.length - fresh.length, broken: broken);
   }
 
-  // ---------------- Schule & TrainingPeaks (über GitHub) ----------------
+  // ---------------- Schule & TrainingPeaks ----------------
+  FeedsRemote? get feeds => AppConfig.hasBackend ? FeedsRemote(Supabase.instance.client) : null;
+  bool get untisOn => links.containsKey('webuntis');
+  bool get tpOn => links.containsKey('trainingpeaks');
+
   Future<void> _loadFeeds() async {
-    tcKey = (await store.meta('tc:key') as String?) ?? '';
-    tcRepo = (await store.meta('tc:repo') as String?) ?? GithubFeeds.defaultRepo;
-    final dk = await store.meta('tc:dk');
-    if (dk is Map && tcKey.isNotEmpty && dk['salt'] is String && dk['k'] is String) {
-      TcCrypto.remember(tcKey, dk['salt'] as String, base64.decode(dk['k'] as String));
-    }
+    final l = await store.meta('links');
+    if (l is Map) links = {for (final e in l.entries) '${e.key}': '${e.value}'};
     final sd = await store.meta('school:data');
     if (sd is Map) {
       try {
@@ -324,11 +325,17 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
     final at = await store.meta('tp:at') as String?;
     tpAt = at == null ? null : DateTime.tryParse(at);
     garminTp = (await store.meta('tp:garmin')) != false;
+    untisHintOff = (await store.meta('hint:untis')) == true;
+  }
+
+  Future<void> hideUntisHint() async {
+    untisHintOff = true;
+    await store.setMeta('hint:untis', true);
+    notifyListeners();
   }
 
   void _resetFeeds() {
-    tcKey = '';
-    tcRepo = GithubFeeds.defaultRepo;
+    links = {};
     school = null;
     schoolError = null;
     hwDone = {};
@@ -337,98 +344,121 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
     _lastFeeds = null;
   }
 
-  /// Schlüssel (= GitHub-Secret TRICOACH_KEY) und Repo speichern und sofort abrufen
-  Future<String> setTcKey(String key, {String? repo}) async {
-    final k = key.trim(), r = (repo ?? tcRepo).trim();
-    if (r.isNotEmpty && !GithubFeeds.validRepo(r)) return 'Repo bitte als „besitzer/name“ angeben';
-    if (k != tcKey) await store.setMeta('tc:dk', null);
-    tcKey = k;
-    tcRepo = r.isEmpty ? GithubFeeds.defaultRepo : r;
-    await store.setMeta('tc:key', k.isEmpty ? null : k);
-    await store.setMeta('tc:repo', tcRepo);
-    if (k.isEmpty) {
-      school = null;
-      schoolError = null;
-      tpError = null;
-      await store.setMeta('school:data', null);
+  Future<void> _saveLinks() => store.setMeta('links', Map<String, Object?>.from(links));
+
+  /// Welche Dienste sind verbunden? (nach dem Anmelden, z. B. auf einem neuen Gerät)
+  Future<void> _loadLinks() async {
+    final f = feeds;
+    if (f == null || !signedIn) return;
+    try {
+      links = await f.status();
+      await _saveLinks();
       notifyListeners();
-      return 'Schule & TrainingPeaks getrennt';
+      await syncFeeds(manual: true);
+    } catch (_) {}
+  }
+
+  Future<void> _applySchool(Map<String, dynamic> raw, {bool announce = false}) async {
+    final d = SchoolData.fromJson(raw);
+    final before = school;
+    school = d;
+    schoolError = null;
+    await store.setMeta('school:data', d.raw);
+    if (announce && before != null) {
+      final today = startOfDay(DateTime.now()), to = addDays(today, 2);
+      final n = d.changes(today, to).length;
+      if (n > before.changes(today, to).length) say('Stundenplan: $n Änderung${n == 1 ? '' : 'en'} heute/morgen');
     }
-    notifyListeners();
-    return syncFeeds(manual: true);
+  }
+
+  Future<String> _applyTp(String ics, {bool announce = false}) async {
+    if (!ics.contains('BEGIN:VCALENDAR')) throw const FormatException('Plan ist keine Kalenderdatei');
+    final known = {for (final x in (await store.meta('tp:ids') as List? ?? const [])) '$x'};
+    final r = await repo.importTpPlan(tpPlanFromIcs(ics), known);
+    await store.setMeta('tp:ids', r.ids.toList());
+    tpAt = DateTime.now();
+    await store.setMeta('tp:at', tpAt!.toIso8601String());
+    tpError = null;
+    final ch = [if (r.added > 0) '${r.added} neu', if (r.changed > 0) '${r.changed} geändert', if (r.removed > 0) '${r.removed} entfernt'];
+    if (announce && ch.isNotEmpty && known.isNotEmpty) say('Trainerin hat den Plan geändert: ${ch.join(', ')}');
+    return ch.isEmpty ? 'unverändert' : ch.join(', ');
   }
 
   String _feedErr(Object e) {
-    if (e is TcKeyError) return e.toString();
-    if (e is TimeoutException || e is ClientException) return 'Keine Verbindung zu GitHub – später nochmal';
+    if (e is FeedsError) return e.message;
+    if (e is TimeoutException) return 'Keine Verbindung – später nochmal';
     if (e is FormatException) return e.message;
     return '$e';
   }
 
-  Future<void> _rememberKey(String txt) async {
+  /// WebUntis verbinden – mit Schule + Benutzer + Passwort (Passwort wird nicht gespeichert) oder mit dem Link aus „Zugriff über Untis Mobile“
+  Future<String> connectUntis({String? zugang, SchoolHit? school, String? user, String? password}) async {
+    final f = feeds;
+    if (f == null || !signedIn) return 'Bitte zuerst anmelden';
+    final r = await f.connectUntis(zugang: zugang?.trim(), school: school, user: user, password: password);
+    links['webuntis'] = r.label;
+    await _saveLinks();
+    await _applySchool(r.data);
+    notifyListeners();
+    return 'Verbunden: ${r.label}';
+  }
+
+  /// TrainingPeaks (oder einen anderen Kalender) über den privaten iCal-Link verbinden
+  Future<String> connectTp(String ical) async {
+    final f = feeds;
+    if (f == null || !signedIn) return 'Bitte zuerst anmelden';
+    final r = await f.connectTp(ical.trim());
+    links['trainingpeaks'] = r.label;
+    await _saveLinks();
+    final res = await _applyTp(r.ics);
+    notifyListeners();
+    return 'Verbunden mit ${r.label} · Plan $res';
+  }
+
+  Future<void> disconnectFeed(String kind) async {
     try {
-      final salt = TcCrypto.saltOf(txt);
-      final dk = await store.meta('tc:dk');
-      if (dk is Map && dk['salt'] == salt) return;
-      final k = await TcCrypto.deriveKey(tcKey, base64.decode(salt));
-      await store.setMeta('tc:dk', {'salt': salt, 'k': base64.encode(k)});
+      await feeds?.disconnect(kind);
     } catch (_) {}
+    links.remove(kind);
+    await _saveLinks();
+    if (kind == 'webuntis') {
+      school = null;
+      schoolError = null;
+      await store.setMeta('school:data', null);
+    } else {
+      tpError = null;
+    }
+    notifyListeners();
   }
 
   /// Stundenplan und TrainingPeaks-Plan holen. Ohne [manual] höchstens alle 10 Minuten.
   Future<String> syncFeeds({bool manual = false}) async {
-    if (tcKey.isEmpty) return manual ? 'Erst den TriCoach-Schlüssel eintragen' : '';
+    final f = feeds;
+    if (f == null || !signedIn || links.isEmpty) return '';
     if (feedsBusy) return 'Läuft schon …';
     if (!manual && _lastFeeds != null && DateTime.now().difference(_lastFeeds!) < const Duration(minutes: 10)) return '';
     feedsBusy = true;
     notifyListeners();
-    final feeds = GithubFeeds(tcRepo), done = <String>[];
+    final done = <String>[];
     try {
-      // Schule
-      try {
-        final txt = await feeds.school();
-        if (txt == null) {
-          schoolError = 'Noch keine Schuldaten – läuft der GitHub-Job „Schule (WebUntis)“?';
-        } else {
-          final d = SchoolData.fromJson(Map<String, dynamic>.from(await TcCrypto.decrypt(txt, tcKey) as Map));
-          await _rememberKey(txt);
-          final before = school;
-          school = d;
-          schoolError = null;
-          await store.setMeta('school:data', d.raw);
-          done.add('Schule (Stand ${timeTxt(d.at.toLocal())})');
-          if (!manual && before != null) {
-            final today = startOfDay(DateTime.now()), to = addDays(today, 2);
-            final n = d.changes(today, to).length;
-            if (n > before.changes(today, to).length) say('Stundenplan: $n Änderung${n == 1 ? '' : 'en'} heute/morgen');
-          }
+      if (untisOn) {
+        try {
+          await _applySchool(await f.fetchUntis().timeout(const Duration(seconds: 40)), announce: !manual);
+          done.add('Schule');
+        } catch (e) {
+          if (e is FeedsError && e.notConnected) links.remove('webuntis');
+          schoolError = _feedErr(e);
         }
-      } catch (e) {
-        schoolError = _feedErr(e);
       }
-      // TrainingPeaks
-      try {
-        final txt = await feeds.trainingPeaks();
-        if (txt == null) {
-          tpError = 'Noch kein Plan – der iCal-Link deiner Trainerin fehlt im GitHub-Job „TrainingPeaks-Plan“.';
-        } else {
-          final o = Map<String, dynamic>.from(await TcCrypto.decrypt(txt, tcKey) as Map);
-          await _rememberKey(txt);
-          final ics = '${o['ics'] ?? ''}';
-          if (!ics.contains('BEGIN:VCALENDAR')) throw const FormatException('Plan ist keine Kalenderdatei');
-          final known = {for (final x in (await store.meta('tp:ids') as List? ?? const [])) '$x'};
-          final r = await repo.importTpPlan(tpPlanFromIcs(ics), known);
-          await store.setMeta('tp:ids', r.ids.toList());
-          tpAt = DateTime.tryParse('${o['at']}');
-          await store.setMeta('tp:at', tpAt?.toIso8601String());
-          tpError = null;
-          final ch = [if (r.added > 0) '${r.added} neu', if (r.changed > 0) '${r.changed} geändert', if (r.removed > 0) '${r.removed} entfernt'];
-          done.add('TrainingPeaks ${ch.isEmpty ? 'unverändert' : ch.join(', ')}');
-          if (!manual && ch.isNotEmpty && known.isNotEmpty) say('Trainerin hat den Plan geändert: ${ch.join(', ')}');
+      if (tpOn) {
+        try {
+          done.add('TrainingPeaks ${await _applyTp(await f.fetchTp().timeout(const Duration(seconds: 40)), announce: !manual)}');
+        } catch (e) {
+          if (e is FeedsError && e.notConnected) links.remove('trainingpeaks');
+          tpError = _feedErr(e);
         }
-      } catch (e) {
-        tpError = _feedErr(e);
       }
+      await _saveLinks();
       _lastFeeds = DateTime.now();
     } finally {
       feedsBusy = false;
