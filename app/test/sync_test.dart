@@ -119,8 +119,8 @@ void main() {
     // Beide ändern offline; B später
     server.offline = true;
     final t = DateTime.now().toUtc();
-    await a.sync.saveLocal('activities', [swim('s1', km: 1.0, updated: t).toRow()]);
-    await b.sync.saveLocal('activities', [swim('s1', km: 3.0, updated: t.add(const Duration(seconds: 5))).toRow()]);
+    await a.saveActivity(swim('s1', km: 1.0, updated: t));
+    await b.saveActivity(swim('s1', km: 3.0, updated: t.add(const Duration(seconds: 5))));
     await a.sync.syncNow();
     await b.sync.syncNow();
     server.offline = false;
@@ -142,7 +142,7 @@ void main() {
     server.write('activities', old.toRow());
     // Lokale neuere Version, noch nicht hochgeladen
     server.offline = true;
-    await a.sync.saveLocal('activities', [swim('s1', km: 2, updated: DateTime.utc(2026, 10, 2)).toRow()]);
+    await a.saveActivity(swim('s1', km: 2, updated: DateTime.utc(2026, 10, 2)));
     server.offline = false;
     await a.sync.syncNow();
     expect(a.activities.single.distanceM, 2000);

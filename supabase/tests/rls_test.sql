@@ -74,5 +74,13 @@ set request.jwt.claim.sub = '00000000-0000-0000-0000-00000000000a';
 select calendar_token as alt from profiles where id = auth.uid() \gset
 select rotate_calendar_token() <> :'alt'::uuid as rotiert \gset
 \if :rotiert \echo 'OK  Kalender-Link erneuert' \else \echo 'FEHLER Kalender-Link' \quit \endif
+-- Fremder löscht seinen Account: seine Daten weg, Daten der anderen bleiben
+set request.jwt.claim.sub = '00000000-0000-0000-0000-00000000000f';
+insert into activities (id,user_id,sport,start_at,duration_s) values ('f1','00000000-0000-0000-0000-00000000000f','run',now(),600);
+select delete_my_account();
 reset role;
+select (select count(*) from auth.users where id='00000000-0000-0000-0000-00000000000f') = 0
+   and (select count(*) from activities where user_id='00000000-0000-0000-0000-00000000000f') = 0
+   and (select count(*) from activities where user_id='00000000-0000-0000-0000-00000000000a') = 1 as geloescht \gset
+\if :geloescht \echo 'OK  Account-Löschung entfernt nur eigene Daten' \else \echo 'FEHLER Account-Löschung' \quit \endif
 \echo 'ALLE DATENBANK-TESTS BESTANDEN'

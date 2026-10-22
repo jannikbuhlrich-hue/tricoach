@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TriCoach – Triathlon-Training ohne Abtippen</title>
+<meta name="description" content="Uhr-Einheiten automatisch, Training im Kalender, Coach sieht alles – auf iPhone, Android und PC.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0b0d12;--surface:#151822;--surface2:#1d2130;--line:#272c3c;--fg:#eef0f6;--muted:#8b91a4;--accent:#f24566;--swim:#33b8f2;--bike:#ff9426;--run:#4dd973;--str:#c77dff;--form:#ffcc33;--fit:#5a8cff;--fat:#f2598c}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.55 Inter,system-ui,sans-serif}
+a{color:inherit}
+.wrap{max-width:1120px;margin:0 auto;padding:0 16px}
+h1,h2,h3,.num{font-family:"Barlow Semi Condensed",system-ui,sans-serif;letter-spacing:.2px}
+nav{display:flex;align-items:center;justify-content:space-between;padding:18px 0}
+.brand{display:flex;gap:10px;align-items:center;font:800 24px "Barlow Semi Condensed",sans-serif}
+.brand i{width:30px;height:30px;border-radius:9px;background:var(--accent);display:grid;place-items:center;font-style:normal;font-size:16px}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:13px 22px;border-radius:999px;background:var(--accent);color:#fff;text-decoration:none;font-weight:600;border:0;cursor:pointer}
+.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--fg)}
+.hero{display:grid;grid-template-columns:1.1fr .9fr;gap:48px;align-items:center;padding:48px 0 72px}
+.hero h1{font-size:clamp(42px,6vw,72px);line-height:1;margin:0 0 18px;text-wrap:balance}
+.hero h1 em{font-style:normal;color:var(--accent)}
+.hero p{color:var(--muted);font-size:19px;max-width:520px;margin:0 0 28px}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:22px}
+.chip{font-size:13px;color:var(--muted);border:1px solid var(--line);padding:6px 12px;border-radius:99px}
+.phone{justify-self:center;width:300px;border-radius:44px;background:#05060a;padding:12px;border:1px solid var(--line);box-shadow:0 40px 80px -30px rgba(242,69,102,.35)}
+.screen{border-radius:34px;background:var(--bg);padding:18px 14px;min-height:560px}
+.screen h4{margin:6px 4px 12px;font:700 22px "Barlow Semi Condensed",sans-serif}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:14px;margin-bottom:10px}
+.row{display:flex;align-items:center;gap:10px;padding:6px 0}
+.dot{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;font-size:15px}
+.row b{font-size:14px;display:block}.row span{font-size:12px;color:var(--muted)}
+.ok{margin-left:auto;color:#3ccf74}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tile{border-radius:16px;padding:12px;background:color-mix(in srgb,var(--c) 11%,var(--surface));border:1px solid color-mix(in srgb,var(--c) 26%,transparent)}
+.tile small{color:var(--muted);font-size:12px}.tile div{font:700 28px "Barlow Semi Condensed",sans-serif}
+section{padding:72px 0;border-top:1px solid var(--line)}
+section h2{font-size:clamp(32px,4vw,46px);margin:0 0 12px;line-height:1.05}
+.lead{color:var(--muted);font-size:18px;max-width:640px;margin:0 0 36px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.feat{background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:24px}
+.feat .ic{width:44px;height:44px;border-radius:13px;display:grid;place-items:center;font-size:22px;margin-bottom:14px;background:color-mix(in srgb,var(--c) 16%,transparent)}
+.feat h3{font-size:24px;margin:0 0 6px}.feat p{color:var(--muted);margin:0}
+.problem{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.bad,.good{border-radius:22px;padding:24px;border:1px solid var(--line)}
+.bad{background:var(--surface)}.good{background:color-mix(in srgb,var(--accent) 10%,var(--surface));border-color:color-mix(in srgb,var(--accent) 30%,transparent)}
+.bad li,.good li{margin:8px 0}.bad ul,.good ul{padding-left:20px;margin:10px 0 0}
+.steps{counter-reset:s;display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.step{counter-increment:s;padding:24px;border-radius:22px;background:var(--surface);border:1px solid var(--line)}
+.step::before{content:counter(s);font:800 40px "Barlow Semi Condensed",sans-serif;color:var(--accent);display:block}
+.step p{color:var(--muted);margin:4px 0 0}
+.price{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.plan{border-radius:22px;padding:26px;background:var(--surface);border:1px solid var(--line)}
+.plan.hl{border-color:var(--accent);box-shadow:0 20px 50px -30px var(--accent)}
+.plan .num{font-size:44px;font-weight:800}.plan .num small{font-size:16px;color:var(--muted);font-weight:600}
+.plan ul{padding-left:18px;color:var(--muted)}
+details{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px 20px;margin-bottom:10px}
+summary{cursor:pointer;font-weight:600}details p{color:var(--muted);margin:10px 0 0}
+.cta{text-align:center;padding:80px 16px}
+.cta form{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:24px}
+.cta input{padding:13px 18px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--fg);min-width:260px;font:inherit}
+footer{border-top:1px solid var(--line);padding:28px 0;color:var(--muted);font-size:14px;display:flex;gap:18px;flex-wrap:wrap;justify-content:space-between}
+@media(max-width:860px){.hero,.problem{grid-template-columns:1fr}.grid3,.steps,.price{grid-template-columns:1fr}.hero{padding-top:16px}.phone{width:280px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav>
+    <div class="brand"><i>⚡</i>TriCoach</div>
+    <a class="btn ghost" href="#beta">Beta-Zugang</a>
+  </nav>
+
+  <header class="hero">
+    <div>
+      <h1>Triathlon-Training <em>ohne Abtippen.</em></h1>
+      <p>Deine Uhr-Einheiten kommen automatisch an. Dein Training steht von selbst im Kalender. Dein Coach sieht alles. Auf iPhone, Android und PC – mit einem Account.</p>
+      <a class="btn" href="#beta">Kostenlos in die Beta</a>
+      <div class="chips"><span class="chip">Garmin · Apple Watch · Coros · Polar</span><span class="chip">Apple & Google Kalender</span><span class="chip">Server in Frankfurt</span></div>
+    </div>
+    <div class="phone" aria-hidden="true">
+      <div class="screen">
+        <h4>Donnerstag, 22. Oktober</h4>
+        <div class="card">
+          <div class="row"><div class="dot" style="background:#33b8f226">🏊</div><div><b>CSS 10×100</b><span>17:00 · 55 min · 2,35 km</span></div><span class="ok">✓</span></div>
+          <div class="row"><div class="dot" style="background:#4dd97326">🏃</div><div><b>Lauf locker</b><span>Morgen 07:00 · 45 min</span></div></div>
+        </div>
+        <div class="tiles">
+          <div class="tile" style="--c:var(--form)"><small>Form</small><div>+6</div><small>Ausgeglichen</small></div>
+          <div class="tile" style="--c:var(--fit)"><small>Fitness</small><div>58</div><small>Ermüdung 52</small></div>
+          <div class="tile" style="--c:var(--accent)"><small>Diese Woche</small><div>7h 40m</div><small>Ziel 9 h</small></div>
+          <div class="tile" style="--c:var(--run)"><small>Serie</small><div>14</div><small>Wochen</small></div>
+        </div>
+        <div class="card" style="margin-top:10px"><div class="row"><div class="dot" style="background:#ff942626">🚴</div><div><b>Neu von deiner Uhr</b><span>Radfahrt · 1h 32m · 46 km · Ø 138 bpm</span></div></div></div>
+      </div>
+    </div>
+  </header>
+</div>
+
+<section>
+  <div class="wrap">
+    <h2>Schluss mit Sync-Chaos.</h2>
+    <p class="lead">Die meisten Trainings-Apps funktionieren – bis der Sync abreißt. Dann tippst du nach, exportierst Dateien und hoffst, dass dein Coach alles sieht.</p>
+    <div class="problem">
+      <div class="bad"><b>Bisher</b><ul><li>Einheit fehlt, Sync neu starten</li><li>Plan in der einen App, Termine in der anderen</li><li>Handy und PC zeigen Verschiedenes</li><li>Coach braucht ein eigenes Abo</li></ul></div>
+      <div class="good"><b>Mit TriCoach</b><ul><li>Uhr → TriCoach, automatisch und ohne Doppelte</li><li>Training direkt in deinem Kalender</li><li>Ein Account, alle Geräte, auch offline</li><li>Coach per Code verbinden – fertig</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Alles, was du wirklich brauchst.</h2>
+    <p class="lead">Gebaut von einem Triathleten für die eigene Saison – und jetzt für alle.</p>
+    <div class="grid3">
+      <div class="feat"><div class="ic" style="--c:var(--swim)">⌚</div><h3>Automatisch von der Uhr</h3><p>Über Apple Health und Health Connect – mit Puls, Distanz und Dauer. Am PC über intervals.icu.</p></div>
+      <div class="feat"><div class="ic" style="--c:var(--bike)">📅</div><h3>Training im Kalender</h3><p>Eigener Kalender „TriCoach“ im Handy, Abo-Link für Outlook und Google. Änderungen ziehen sich automatisch nach.</p></div>
+      <div class="feat"><div class="ic" style="--c:var(--run)">📈</div><h3>Form & Fortschritt</h3><p>Form-Kurve, Wochenumfang je Sportart, VO2 Max, Bestzeiten und Prognosen – ohne Tabellen.</p></div>
+      <div class="feat"><div class="ic" style="--c:var(--swim)">🏊</div><h3>Schwimmen richtig</h3><p>25-m-Bahn, 50-m-Bahn oder Freiwasser. km tippen oder Bahnen zählen – TriCoach rechnet.</p></div>
+      <div class="feat"><div class="ic" style="--c:var(--str)">🏋️</div><h3>Athletik & mehr</h3><p>Übungen mit Sätzen und Gewicht. Kitesurfen, Wandern, Rudern – alles zählt mit.</p></div>
+      <div class="feat"><div class="ic" style="--c:var(--accent)">🤝</div><h3>Für Coaches</h3><p>Athleten per Code einladen, Ampel „erledigt/verpasst“, Einheiten direkt in ihren Kalender planen.</p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>In 2 Minuten startklar.</h2>
+    <div class="steps">
+      <div class="step"><b>Account anlegen</b><p>Mit Apple, Google oder E-Mail.</p></div>
+      <div class="step"><b>Uhr verbinden</b><p>Ein Tipp – ab jetzt kommt jede Einheit von selbst.</p></div>
+      <div class="step"><b>Kalender einschalten</b><p>Training erscheint neben deinen anderen Terminen.</p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Fair im Preis.</h2>
+    <p class="lead">Die Grundfunktionen bleiben kostenlos. Beta-Tester bekommen 6 Monate Premium geschenkt.</p>
+    <div class="price">
+      <div class="plan"><b>Free</b><div class="num">0 €</div><ul><li>Eintragen & Uhr-Sync</li><li>Kalender-Sync</li><li>Alle Geräte</li><li>Basis-Verlauf</li></ul></div>
+      <div class="plan hl"><b>Premium</b><div class="num">4,99 € <small>/ Monat</small></div><ul><li>Form-Kurve & Belastungswarnung</li><li>VO2-Max-Trend</li><li>Bestleistungen & Jahresziele</li><li>39,99 € im Jahr</li></ul></div>
+      <div class="plan"><b>Coach</b><div class="num">14,99 € <small>/ Monat</small></div><ul><li>Unbegrenzt Athleten</li><li>Trainer-Ansicht mit Ampel</li><li>Plan direkt eintragen</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Fragen</h2>
+    <details><summary>Welche Uhren funktionieren?</summary><p>Alle, die ihre Einheiten an Apple Health (iPhone) oder Health Connect (Android) übergeben – z. B. Garmin, Apple Watch, Coros, Polar, Wahoo, Suunto. Am PC zusätzlich über intervals.icu.</p></details>
+    <details><summary>Brauche ich TrainingPeaks?</summary><p>Nein. Dein Coach kann dich direkt in TriCoach betreuen. Eine Brücke für alle, die TrainingPeaks weiter nutzen möchten, ist bis zum Start geplant.</p></details>
+    <details><summary>Wo liegen meine Daten?</summary><p>Auf Servern in Frankfurt (EU), übertragen per TLS. Jeder sieht nur seine eigenen Daten; dein Coach nur, wenn du seinen Code einlöst. Export und Löschung jederzeit.</p></details>
+    <details><summary>Wann kommt die App?</summary><p>Beta ab Dezember 2026, Start im App Store und bei Google Play im Januar 2027.</p></details>
+  </div>
+</section>
+
+<section class="cta" id="beta">
+  <h2>Sei bei der Beta dabei.</h2>
+  <p class="lead" style="margin:0 auto">Trag dich ein – du bekommst eine Mail, sobald dein Zugang bereit ist.</p>
+  <!-- TODO: action auf ein Formular-Tool (z. B. Tally, Formspree oder Supabase-Tabelle) zeigen lassen -->
+  <form onsubmit="event.preventDefault();this.innerHTML='<p>Danke! Du hörst von mir. 🙌</p>'">
+    <input type="email" required placeholder="deine@mail.de" aria-label="E-Mail-Adresse">
+    <button class="btn" type="submit">Beta-Zugang anfragen</button>
+  </form>
+</section>
+
+<div class="wrap">
+  <footer>
+    <span>© 2026 TriCoach</span>
+    <span><a href="#">Impressum</a> · <a href="#">Datenschutz</a></span>
+  </footer>
+</div>
+</body>
+</html>

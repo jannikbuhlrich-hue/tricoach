@@ -144,8 +144,13 @@ class _ProgressScreenState extends State<ProgressScreen> {
                     child: Row(children: [
                       SportBadge(s, size: 28),
                       const SizedBox(width: 10),
-                      Expanded(child: Text(s.label)),
-                      Text('${year[s]!.distanceM > 0 ? '${distTxt(s, year[s]!.distanceM)} · ' : ''}${hm(year[s]!.durationS)}', style: TextStyle(color: c.muted)),
+                      Expanded(child: Text(s.label, maxLines: 1, overflow: TextOverflow.ellipsis)),
+                      const SizedBox(width: 6),
+                      Flexible(
+                        flex: 2,
+                        child: Text('${year[s]!.distanceM > 0 ? '${distTxt(s, year[s]!.distanceM)} · ' : ''}${hm(year[s]!.durationS)}',
+                            maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.right, style: TextStyle(color: c.muted)),
+                      ),
                     ]),
                   ),
               if (lastYear.count > 0)

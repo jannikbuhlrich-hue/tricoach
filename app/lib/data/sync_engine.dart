@@ -37,7 +37,7 @@ class SyncEngine {
   final List<String> tables;
 
   /// Wird aufgerufen, wenn sich lokale Daten durch den Abgleich geändert haben (Tabellenname)
-  final void Function(String table)? onChanged;
+  final Future<void> Function(String table)? onChanged;
   final void Function(SyncStatus status)? onStatus;
 
   SyncRemote? _remote;
@@ -222,7 +222,7 @@ class SyncEngine {
       await store.setMeta(_cursorKey(table), cursor);
       if (rows.length < 1000 || !progressed) break;
     }
-    if (changed) onChanged?.call(table);
+    if (changed) await onChanged?.call(table);
   }
 
   /// Ist [a] neuer als [b]? (updated_at vergleichen, ISO-Zeitstempel in UTC)

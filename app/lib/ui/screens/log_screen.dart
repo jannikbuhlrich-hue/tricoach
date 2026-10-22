@@ -293,9 +293,16 @@ class _LogScreenState extends State<LogScreen> {
           if (sport == Sport.strength) ...[
             const SizedBox(height: 16),
             Row(children: [
-              Text('Übungen', style: TextStyle(color: c.muted)),
-              Text('  optional', style: TextStyle(color: c.faint, fontSize: 12)),
-              const Spacer(),
+              Expanded(
+                child: Text.rich(
+                  TextSpan(children: [
+                    TextSpan(text: 'Übungen', style: TextStyle(color: c.muted)),
+                    TextSpan(text: '  optional', style: TextStyle(color: c.faint, fontSize: 12)),
+                  ]),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
               TextButton.icon(onPressed: () => setState(() => ex.add(_ExRow())), icon: const Icon(Icons.add_rounded), label: const Text('Übung')),
             ]),
             if (ex.isEmpty) Text('Z. B. Kniebeuge 3 × 10 mit 40 kg, Plank 3 × 45 s.', style: TextStyle(color: c.faint, fontSize: 13)),
@@ -323,9 +330,9 @@ class _LogScreenState extends State<LogScreen> {
           ],
           const SizedBox(height: 16),
           Row(children: [
-            Text('Anstrengung (RPE)', style: TextStyle(color: c.muted)),
-            const Spacer(),
-            Text('$rpe · ${rpeText[rpe]}', style: const TextStyle(fontWeight: FontWeight.w700)),
+            Expanded(child: Text('Anstrengung (RPE)', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.muted))),
+            const SizedBox(width: 8),
+            Flexible(child: Text('$rpe · ${rpeText[rpe]}', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w700))),
           ]),
           Slider(value: rpe.toDouble(), min: 1, max: 10, divisions: 9, label: '$rpe', onChanged: (v) => setState(() => rpe = v.round())),
           if (!watch)

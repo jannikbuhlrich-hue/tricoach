@@ -150,6 +150,17 @@ returns uuid language sql security invoker set search_path = public as $$
   update public.profiles set calendar_token = gen_random_uuid() where id = auth.uid() returning calendar_token;
 $$;
 
+-- Account mit allen Daten löschen (DSGVO: Recht auf Löschung). Einheiten, Pläne, Profil,
+-- Coach-Verbindungen und Einladungen hängen per "on delete cascade" am Nutzer.
+create or replace function public.delete_my_account()
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if auth.uid() is null then raise exception 'Nicht angemeldet'; end if;
+  delete from auth.users where id = auth.uid();
+end $$;
+revoke execute on function public.delete_my_account() from public, anon;
+grant execute on function public.delete_my_account() to authenticated;
+
 -- ---------------------------------------------------------------------------
 -- Zeitstempel: updated_at kommt vom Gerät ("letzte Änderung gewinnt"), synced_at vom Server
 -- ---------------------------------------------------------------------------

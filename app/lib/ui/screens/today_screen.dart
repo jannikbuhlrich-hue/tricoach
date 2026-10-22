@@ -99,11 +99,15 @@ class TodayScreen extends StatelessWidget {
                           child: Row(children: [
                             Icon(sportIcon(s), size: 16, color: c.sport(s)),
                             const SizedBox(width: 6),
-                            Expanded(child: Text(s.label)),
-                            Text(() {
-                              final t = totals(app.activities, weekStart(today), addDays(weekStart(today), 7), sport: s);
-                              return '${hm(t.durationS)}${t.distanceM > 0 ? ' · ${distTxt(s, t.distanceM)}' : ''}';
-                            }(), style: TextStyle(color: c.muted)),
+                            Expanded(child: Text(s.label, maxLines: 1, overflow: TextOverflow.ellipsis)),
+                            const SizedBox(width: 6),
+                            Flexible(
+                              flex: 2,
+                              child: Text(() {
+                                final t = totals(app.activities, weekStart(today), addDays(weekStart(today), 7), sport: s);
+                                return '${hm(t.durationS)}${t.distanceM > 0 ? ' · ${distTxt(s, t.distanceM)}' : ''}';
+                              }(), maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.right, style: TextStyle(color: c.muted)),
+                            ),
                           ]),
                         ),
                     Text(form.hint, style: TextStyle(color: c.muted, fontSize: 12)),

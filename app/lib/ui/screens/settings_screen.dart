@@ -100,6 +100,20 @@ class SettingsScreen extends StatelessWidget {
                 OutlinedButton.icon(onPressed: () => app.repo.sync.syncNow(), icon: const Icon(Icons.sync_rounded), label: const Text('Jetzt abgleichen')),
                 TextButton(
                   onPressed: () async {
+                    final ok = await _confirm(context, 'Account löschen?',
+                        'Alle Einheiten, Pläne, Coach-Verbindungen und dein Profil werden auf dem Server und diesem Gerät endgültig gelöscht. Das lässt sich nicht rückgängig machen.');
+                    if (!ok) return;
+                    try {
+                      await app.deleteAccount();
+                      if (context.mounted) showMsg(context, 'Account und alle Daten gelöscht');
+                    } catch (e) {
+                      if (context.mounted) showMsg(context, 'Löschen gerade nicht möglich – bitte später erneut versuchen.');
+                    }
+                  },
+                  child: Text('Account löschen', style: TextStyle(color: c.bad)),
+                ),
+                TextButton(
+                  onPressed: () async {
                     final ok = await _confirm(context, 'Abmelden?', 'Deine Daten bleiben im Account. Auf diesem Gerät werden sie gelöscht, bis du dich wieder anmeldest.');
                     if (ok) await app.signOut();
                   },

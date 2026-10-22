@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -138,6 +137,24 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
     notifyListeners();
   }
 
+  /// Account und alle Daten endgültig löschen (Server und dieses Gerät)
+  Future<void> deleteAccount() async {
+    final r = _remote;
+    if (r == null) return;
+    await r.deleteAccount();
+    await _detach();
+    try {
+      await Supabase.instance.client.auth.signOut();
+    } catch (_) {}
+    await repo.wipe();
+    await devCal.disable();
+    calendarOn = false;
+    healthOn = false;
+    onboarded = false;
+    await store.setMeta('onboarded', null);
+    notifyListeners();
+  }
+
   /// Alles abgleichen: Server, Uhr, Kalender
   Future<void> refresh() async {
     repo.sync.schedule();
@@ -145,8 +162,8 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   @override
-  void didChangeAppLifecycleState(AppLifecycleState s) {
-    if (s == AppLifecycleState.resumed) unawaited(refresh());
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) unawaited(refresh());
   }
 
   void say(String text) {

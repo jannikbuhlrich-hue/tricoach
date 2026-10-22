@@ -58,7 +58,7 @@ class TriCard extends StatelessWidget {
                   child: Text(c.upperLabels ? title!.toUpperCase() : title!,
                       style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15, letterSpacing: c.upperLabels ? 1.1 : 0, color: c.fg)),
                 ),
-                if (trailing != null) trailing!,
+                if (trailing != null) Flexible(child: Align(alignment: Alignment.centerRight, child: trailing!)),
               ]),
               const SizedBox(height: 12),
             ],

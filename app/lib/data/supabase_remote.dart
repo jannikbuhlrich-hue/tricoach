@@ -78,6 +78,11 @@ class SupabaseRemote implements SyncRemote {
     return row?.toString();
   }
 
+  /// Account mit allen Daten auf dem Server löschen
+  Future<void> deleteAccount() async {
+    await client.rpc('delete_my_account');
+  }
+
   // ---- Coach ----
   Future<String> createCoachInvite() async {
     final row = await client.from('coach_invites').insert({'coach_id': userId}).select('code').single();

@@ -1,5 +1,6 @@
 package app.tricoach.tricoach
 
-import io.flutter.embedding.android.FlutterActivity
+import io.flutter.embedding.android.FlutterFragmentActivity
 
-class MainActivity : FlutterActivity()
+// FragmentActivity: nötig für den Health-Connect-Berechtigungsdialog
+class MainActivity : FlutterFragmentActivity()
